@@ -6,6 +6,7 @@ import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput
 export default function CrearGrupoScreen() {
   const [nombre, setNombre] = useState("");
   const [ubicacion, setUbicacion] = useState("");
+  const [descripcion, setDescripcion] = useState("");
   const [maxMiembros, setMaxMiembros] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
@@ -67,6 +68,14 @@ export default function CrearGrupoScreen() {
           placeholderTextColor="#9aa49d"
           value={ubicacion}
           onChangeText={setUbicacion}
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Descripción"
+          placeholderTextColor="#9aa49d"
+          value={ubicacion}
+          onChangeText={setDescripcion}
           style={styles.input}
         />
 
