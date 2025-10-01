@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, {  useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-
+import EditableRow  from "../../components/EditableRow"
 
 type Profile = {
   nombre: string;
@@ -40,13 +40,12 @@ export default function PerfilScreen() {
     avatarUri: undefined,
   });
 
-  // Estado del modal genérico
   const [open, setOpen] = useState(false);
   const [field, setField] = useState<FieldKey | null>(null);
   const [tempValue, setTempValue] = useState("");
 
-  const label = useMemo(() => (field ? LABELS[field] : ""), [field]);
-  const kbType = useMemo(() => (field && KEYBOARD[field]) || "default", [field]);
+  const label = field ? LABELS[field] : "";
+  const kbType = (field && KEYBOARD[field]) || "default";
 
   const onEdit = (k: FieldKey) => {
     setField(k);
@@ -65,8 +64,8 @@ export default function PerfilScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Avatar */}
-        <Pressable style={styles.avatarWrap} onPress={() => {/* aquí luego: ImagePicker */}}>
+        
+        <Pressable style={styles.avatarWrap} onPress={() => {}}>
           {data.avatarUri ? (
             <Image source={{ uri: data.avatarUri }} style={styles.avatar} />
           ) : (
@@ -76,7 +75,7 @@ export default function PerfilScreen() {
           )}
         </Pressable>
 
-        {/* Campos editables */}
+        
         <EditableRow label={LABELS.nombre} value={data.nombre} onPress={() => onEdit("nombre")} />
         <EditableRow label={LABELS.apellido} value={data.apellido} onPress={() => onEdit("apellido")} />
         <EditableRow label={LABELS.telefono} value={data.telefono} onPress={() => onEdit("telefono")} />
@@ -85,7 +84,7 @@ export default function PerfilScreen() {
         <EditableRow label={LABELS.apodo} value={data.apodo} onPress={() => onEdit("apodo")} />
       </ScrollView>
 
-      {/* Modal de edición por estado */}
+      
       <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -113,41 +112,13 @@ export default function PerfilScreen() {
   );
 }
 
-// --- Componentes auxiliares ---
-function EditableRow({ label, value, onPress }: { label: string; value?: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.row}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={styles.rowValue}>{value || "Completar"}</Text>
-      </View>
-      <Text style={styles.rowEdit}>Editar</Text>
-    </Pressable>
-  );
-}
 
-// --- Estilos ---
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0F1310" },
   container: { padding: 16, gap: 12, alignItems: "center" },
   avatarWrap: { marginTop: 8, marginBottom: 12 },
   avatar: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#222" },
   avatarPlaceholder: { justifyContent: "center", alignItems: "center" },
-  row: {
-    width: "100%",
-    backgroundColor: "#1a1f1b",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "#2a322b",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  rowLabel: { color: "#9aa49d", fontSize: 12, marginBottom: 4 },
-  rowValue: { color: "#e8eee9", fontSize: 16, fontWeight: "600" },
-  rowEdit: { color: "#9ec39f", fontSize: 14, fontWeight: "700" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 },
   modalCard: { backgroundColor: "#0F1310", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "#2a322b" },
   modalTitle: { color: "#e8eee9", fontSize: 18, fontWeight: "700", marginBottom: 12 },
@@ -168,16 +139,3 @@ const styles = StyleSheet.create({
   btnPrimary: { backgroundColor: "#4B5320" },
   btnPrimaryText: { color: "white", fontWeight: "700" },
 });
-
-// -------------------------------------------------------
-// Variante: reusar tu ModalUpdatePerfil existente
-// Si ya tenés <ModalUpdatePerfil>, podés reemplazar el <Modal> anterior por:
-// <ModalUpdatePerfil
-//   name={tempValue}
-//   open={open}
-//   title={label}
-//   keyboardType={kbType}
-//   onCloseModal={() => setOpen(false)}
-//   onSave={(v: string) => { setTempValue(v); onSave(); }}
-// />
-// Ajustá la API del componente según lo que exporte hoy.
