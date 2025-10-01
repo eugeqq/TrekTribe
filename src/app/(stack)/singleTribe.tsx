@@ -1,20 +1,19 @@
-import React from "react";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function GrupoScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
       nombre?: string;
       ubicacion?: string;
-      miembrosCant?: string;     // siempre llega string
+      miembrosCant?: string;
       foto?: string;
       descripcion?: string;
       fechaInicio?: string;
       fechaFin?: string;
-      miembrosNombres?: string;  // JSON string
+      miembrosNombres?: string; 
   }>();
     
 
@@ -51,14 +50,12 @@ export default function GrupoScreen() {
       <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
         <Ionicons name="chevron-back" size={22} color="#e8eee9" />
       </Pressable>
-        {/* Portada */}
         <View style={styles.portadaWrap}>
           <Image
             source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }}
             style={styles.portada}
           />
-
-          {/* Avatar circular */}
+          
           <View style={styles.avatarOverlay}>
             <Image
               source={{ uri: foto }}              
@@ -67,10 +64,8 @@ export default function GrupoScreen() {
           </View>
         </View>
 
-        {/* Nombre del grupo */}
         <Text style={styles.groupName}>{nombreGrupo}</Text>
 
-        {/* Descripción, ubicación, fechas, miembros */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>{descripcion}</Text>
           <Text style={styles.infoSubText}>Ubicación: {ubicacion}</Text>
@@ -105,7 +100,6 @@ export default function GrupoScreen() {
           </View>
         </View>
 
-        {/* Botones de funcionalidades */}
         <View style={styles.buttonsRow}>
           {[
             "Gastos",

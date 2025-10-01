@@ -45,9 +45,6 @@ export default function CrearGrupoScreen() {
       return;
     }
 
-    // Acá podrías persistir en tu backend…
-
-    // Volvemos a la lista pasando un flag para que agregue SOLO en este flujo
     router.replace({
       pathname: "/(tabs)/tribes",
       params: {
@@ -55,7 +52,6 @@ export default function CrearGrupoScreen() {
         nombre: nombre.trim(),
         ubicacion: ubicacion.trim(),
         miembros: String(Number(maxMiembros) || 0),
-        // foto: imagenUri ?? "",  // descomentá si querés pasar la imagen
       },
     });
   };
@@ -68,7 +64,6 @@ export default function CrearGrupoScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Avatar arriba */}
         <Pressable style={styles.avatarWrap} onPress={seleccionarImagen}>
           {imagenUri ? (
             <Image source={{ uri: imagenUri }} style={styles.avatar} />
