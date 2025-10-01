@@ -188,7 +188,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/mariaeugeniaq/proyect/TrekTribe/src/server/src/generated/prisma",
+      "value": "/Users/milagrosluz/Documents/PAAP/TrekTribeApp/src/server/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -202,12 +202,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/mariaeugeniaq/proyect/TrekTribe/src/server/prisma/schema.prisma",
+    "sourceFilePath": "/Users/milagrosluz/Documents/PAAP/TrekTribeApp/src/server/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../../prisma",
   "clientVersion": "6.16.3",
@@ -216,7 +215,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {
