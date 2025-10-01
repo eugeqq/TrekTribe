@@ -2,6 +2,9 @@
 
 # dependencies
 node_modules/
+.expo/
+.env
+.DS_Store
 
 # Expo
 .expo/
@@ -41,3 +44,5 @@ app-example
 # generated native folders
 /ios
 /android
+
+/src/generated/prisma

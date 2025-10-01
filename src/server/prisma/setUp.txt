@@ -1,0 +1,13 @@
+npm i -D prisma
+npm i @prisma/client
+ npx prisma init --db
+
+View and edit your data locally by running this command:
+npx prisma studio
+
+  online in Console:
+https://console.prisma.io/cmg72zxx101apzqebuq0c2lpv/cmg7humex00mo0bfksfi9wj3q/cmg7humex00mp0bfk6lqboozf/studio
+
+4. Send queries from your app
+To access your database from a JavaScript/TypeScript app,
+ you need to use Prisma ORM. Go here for step-by-step instructions: https://pris.ly/ppg-init
