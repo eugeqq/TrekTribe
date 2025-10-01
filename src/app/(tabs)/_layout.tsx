@@ -3,12 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Platform, StyleSheet } from "react-native";
 
 const COLORS = {
-  bg: "#0F1310",        // fondo app
-  surface: "#1a1f1b",   // cards / superficies
-  border: "#2a322b",    // bordes sutiles
-  text: "#e8eee9",      // texto
-  subtext: "#9aa49d",   // labels
-  accent: "#9ec39f",    // acento claro (match "Editar")
+  bg: "#0F1310",        
+  surface: "#1a1f1b",   
+  border: "#2a322b",    
+  text: "#e8eee9",      
+  subtext: "#9aa49d",   
+  accent: "#9ec39f",    
 };
 
 export default function TabsLayout() {

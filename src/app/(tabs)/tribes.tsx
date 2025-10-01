@@ -61,7 +61,7 @@ export default function GruposScreen() {
 
   const [busqueda, setBusqueda] = useState("");
 
-  // Si venimos de CrearGrupoScreen, agregamos el grupo nuevo
+  
   useEffect(() => {
     if (params.__from === "create" && params.nombre && params.ubicacion && params.miembros)  {
       const nuevoGrupo: Grupo = {
@@ -80,13 +80,13 @@ export default function GruposScreen() {
   );
 
   const crearGrupo = () => {
-    router.push("/createTribe"); // navegar a pantalla de crear grupo
+    router.push("/createTribe"); 
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Barra de búsqueda + botón en fila */}
+        
         <View style={styles.rowTop}>
           <TextInput
             placeholder="Buscar grupo..."
@@ -100,7 +100,7 @@ export default function GruposScreen() {
           </Pressable>
         </View>
 
-        {/* Lista de grupos */}
+        
         {gruposFiltrados.map((grupo, index) => (
           <Pressable
             key={index}
@@ -121,13 +121,13 @@ export default function GruposScreen() {
               })
             }
           >
-            {/* Foto circular */}
+            
             <Image
               source={{ uri: grupo.foto }}
               style={styles.grupoFoto}
               resizeMode="cover"
             />
-            {/* Info */}
+            
             <View style={{ flex: 1 }}>
               <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
               <Text style={styles.grupoInfo}>

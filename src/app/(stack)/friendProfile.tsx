@@ -15,10 +15,10 @@ export default function PerfilAmigoScreen() {
     dni?: string;
     apodo?: string;
     avatarUri?: string;
-    grupos?: string; // JSON string de Grupo[]
+    grupos?: string; 
   }>();
 
-  // Fallbacks seguros
+  
   const nombre          = raw.nombre ?? "Invitado";
   const apellido        = raw.apellido ?? "";
   const telefono        = raw.telefono ?? "—";
@@ -30,7 +30,7 @@ export default function PerfilAmigoScreen() {
       ? raw.avatarUri
       : "https://i.pravatar.cc/200";
 
-  // Parsear grupos si vinieron en JSON
+  
   let grupos: Grupo[] = [];
   try {
     if (raw.grupos) {
@@ -40,7 +40,6 @@ export default function PerfilAmigoScreen() {
       }
     }
   } catch {
-    // deja grupos vacío
   }
 
   const eliminarAmigo = () => {
@@ -48,7 +47,7 @@ export default function PerfilAmigoScreen() {
   };
 
   const irAGrupo = (nombreGrupo: string) => {
-    // navegá a tu detalle de grupo por nombre o id si lo tenés
+    
     alert(`Ir al grupo: ${nombreGrupo}`);
   };
 
@@ -58,12 +57,12 @@ export default function PerfilAmigoScreen() {
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={22} color="#e8eee9" />
         </Pressable>
-        {/* Avatar */}
+        
         <View style={styles.avatarWrap}>
           <Image source={{ uri: avatarUri }} style={styles.avatar} />
         </View>
 
-        {/* Datos del amigo */}
+        
         <View style={styles.infoBox}>
           <InfoRow label="Nombre" value={nombre} />
           {!!apellido && <InfoRow label="Apellido" value={apellido} />}
@@ -73,7 +72,7 @@ export default function PerfilAmigoScreen() {
           {!!apodo && <InfoRow label="Apodo" value={apodo} />}
         </View>
 
-        {/* Grupos en común */}
+        
         <View style={[styles.infoBox, { marginTop: 16 }]}>
           <Text style={styles.sectionTitle}>Grupos en común</Text>
           {grupos.length === 0 ? (
@@ -87,7 +86,7 @@ export default function PerfilAmigoScreen() {
           )}
         </View>
 
-        {/* Botón eliminar */}
+        
         <Pressable style={styles.btnPrimary} onPress={eliminarAmigo}>
           <Text style={styles.btnPrimaryText}>Eliminar amigo</Text>
         </Pressable>
@@ -96,7 +95,7 @@ export default function PerfilAmigoScreen() {
   );
 }
 
-// --- Componente auxiliar ---
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.row}>
@@ -106,7 +105,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// --- Estilos (tus mismos colores) ---
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0F1310" },
   container: { padding: 16, gap: 16, alignItems: "center" },
@@ -157,7 +156,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1f1b",
     borderWidth: 1,
     borderColor: "#2a322b",
-    // sombrita sutil
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,

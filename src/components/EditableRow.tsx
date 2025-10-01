@@ -10,7 +10,6 @@ export default function EditableRow({ label, value, onPress, disabled, onLongPre
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
       disabled={disabled}
       style={[styles.row, disabled && { opacity: 0.5 }]}
       accessibilityRole="button"
