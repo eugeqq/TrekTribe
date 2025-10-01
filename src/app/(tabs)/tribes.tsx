@@ -1,11 +1,21 @@
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 type Grupo = {
   nombre: string;
   ubicacion: string;
   miembros: number;
+  foto?: string;
 };
 
 export default function GruposScreen() {
@@ -13,9 +23,24 @@ export default function GruposScreen() {
   const params = useGlobalSearchParams();
 
   const [grupos, setGrupos] = useState<Grupo[]>([
-    { nombre: "Aventureros Andinos", ubicacion: "Mendoza", miembros: 5 },
-    { nombre: "Exploradores Patagónicos", ubicacion: "Bariloche", miembros: 8 },
-    { nombre: "Caminantes Urbanos", ubicacion: "Buenos Aires", miembros: 3 },
+    {
+      nombre: "Aventureros Andinos",
+      ubicacion: "Mendoza",
+      miembros: 5,
+      foto: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
+    },
+    {
+      nombre: "Exploradores Patagónicos",
+      ubicacion: "Bariloche",
+      miembros: 8,
+      foto: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=200&h=200&fit=crop",
+    },
+    {
+      nombre: "Caminantes Urbanos",
+      ubicacion: "Buenos Aires",
+      miembros: 3,
+      foto: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200&h=200&fit=crop",
+    },
   ]);
 
   const [busqueda, setBusqueda] = useState("");
@@ -27,6 +52,8 @@ export default function GruposScreen() {
         nombre: params.nombre as string,
         ubicacion: params.ubicacion as string,
         miembros: Number(params.miembros),
+        foto:
+          "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
       };
       setGrupos((prev) => [nuevoGrupo, ...prev]);
     }
@@ -59,10 +86,25 @@ export default function GruposScreen() {
 
         {/* Lista de grupos */}
         {gruposFiltrados.map((grupo, index) => (
-          <View key={index} style={styles.grupoCard}>
-            <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
-            <Text style={styles.grupoInfo}>{grupo.ubicacion} • {grupo.miembros} miembros</Text>
-          </View>
+          <Pressable
+            key={index}
+            style={styles.grupoCard}
+            // onPress={() => router.push(`/grupo/${grupo.nombre}`)}
+          >
+            {/* Foto circular */}
+            <Image
+              source={{ uri: grupo.foto }}
+              style={styles.grupoFoto}
+              resizeMode="cover"
+            />
+            {/* Info */}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
+              <Text style={styles.grupoInfo}>
+                {grupo.ubicacion} • {grupo.miembros} miembros
+              </Text>
+            </View>
+          </Pressable>
         ))}
 
         {gruposFiltrados.length === 0 && (
@@ -76,7 +118,7 @@ export default function GruposScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0F1310" },
   container: { padding: 16, gap: 16, alignItems: "center" },
-  
+
   rowTop: {
     flexDirection: "row",
     width: "100%",
@@ -107,13 +149,22 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#1a1f1b",
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: "#2a322b",
     marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  grupoNombre: { color: "#e8eee9", fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  grupoFoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  grupoNombre: { color: "#e8eee9", fontSize: 16, fontWeight: "700" },
   grupoInfo: { color: "#9aa49d", fontSize: 14 },
   noResults: { color: "#9aa49d", fontSize: 14, marginTop: 16 },
 });

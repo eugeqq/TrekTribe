@@ -48,15 +48,15 @@ export default function CrearGrupoScreen() {
             <Image source={{ uri: imagenUri }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarPlaceholderText}>Añadir foto del grupo</Text>
+              <Text style={styles.avatarPlaceholderText}>Añadir foto de tribu</Text>
             </View>
           )}
         </Pressable>
 
-        <Text style={styles.title}>Crear Grupo</Text>
+        <Text style={styles.title}>Crear Tribu</Text>
 
         <TextInput
-          placeholder="Nombre del grupo"
+          placeholder="Nombre de Tribu"
           placeholderTextColor="#9aa49d"
           value={nombre}
           onChangeText={setNombre}
@@ -105,7 +105,7 @@ export default function CrearGrupoScreen() {
         />
 
         <Pressable style={styles.btnPrimary} onPress={crearGrupo}>
-          <Text style={styles.btnPrimaryText}>Crear grupo</Text>
+          <Text style={styles.btnPrimaryText}>Crear tribu</Text>
         </Pressable>
 
         <Pressable style={styles.btnGhost} onPress={cancelar}>

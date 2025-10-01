@@ -95,19 +95,19 @@ const styles = StyleSheet.create({
   rowLabel: { color: "#9aa49d", fontSize: 14, fontWeight: "600" },
   rowValue: { color: "#e8eee9", fontSize: 16, fontWeight: "700" },
 
-  sectionTitle: { color: "#9ec39f", fontWeight: "700", fontSize: 16, marginBottom: 8 },
+  sectionTitle: { color: "#9aa49d", fontWeight: "500", fontSize: 16, marginBottom: 8 },
 
   groupButton: {
-    backgroundColor: "#4B5320",
+    backgroundColor: "#2a322b",
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  groupButtonText: { color: "white", fontWeight: "700" },
+  groupButtonText: {color: "#9ec39f", fontWeight: "600"},
 
   btnPrimary: {
-    backgroundColor: "#B22222",
+    backgroundColor: "#993333",
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,

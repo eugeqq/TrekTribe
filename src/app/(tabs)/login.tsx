@@ -20,7 +20,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>Bienvenido</Text>
+        <Text style={styles.title}>Bienvenido a tu Tribu</Text>
         <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
 
         <TextInput
