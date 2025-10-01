@@ -1,7 +1,16 @@
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function CrearGrupoScreen() {
   const [nombre, setNombre] = useState("");
@@ -20,28 +29,45 @@ export default function CrearGrupoScreen() {
       allowsEditing: true,
       quality: 0.7,
     });
-
-    if (!result.canceled) {
-      setImagenUri(result.assets[0].uri);
-    }
+    if (!result.canceled) setImagenUri(result.assets[0].uri);
   };
 
   const crearGrupo = () => {
-    if (!nombre || !ubicacion || !maxMiembros || !fechaInicio || !fechaFin) {
-      alert("Por favor completa todos los campos");
+    const ready =
+      nombre.trim() &&
+      ubicacion.trim() &&
+      maxMiembros.trim() &&
+      fechaInicio.trim() &&
+      fechaFin.trim();
+
+    if (!ready) {
+      alert("Por favor completá todos los campos.");
       return;
     }
 
-    console.log("Grupo creado:", { nombre, ubicacion, maxMiembros, fechaInicio, fechaFin, imagenUri });
+    // Acá podrías persistir en tu backend…
 
-    
+    // Volvemos a la lista pasando un flag para que agregue SOLO en este flujo
+    router.replace({
+      pathname: "/(tabs)/tribes",
+      params: {
+        __from: "create",
+        nombre: nombre.trim(),
+        ubicacion: ubicacion.trim(),
+        miembros: String(Number(maxMiembros) || 0),
+        // foto: imagenUri ?? "",  // descomentá si querés pasar la imagen
+      },
+    });
   };
 
   const cancelar = () => router.back();
 
+  const ready =
+    nombre && ubicacion && maxMiembros && fechaInicio && fechaFin;
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Avatar arriba */}
         <Pressable style={styles.avatarWrap} onPress={seleccionarImagen}>
           {imagenUri ? (
@@ -74,9 +100,10 @@ export default function CrearGrupoScreen() {
         <TextInput
           placeholder="Descripción"
           placeholderTextColor="#9aa49d"
-          value={ubicacion}
+          value={descripcion}
           onChangeText={setDescripcion}
-          style={styles.input}
+          style={[styles.input, styles.inputMultiline]}
+          multiline
         />
 
         <TextInput
@@ -104,7 +131,11 @@ export default function CrearGrupoScreen() {
           style={styles.input}
         />
 
-        <Pressable style={styles.btnPrimary} onPress={crearGrupo}>
+        <Pressable
+          style={[styles.btnPrimary, !ready && { opacity: 0.5 }]}
+          onPress={crearGrupo}
+          disabled={!ready}
+        >
           <Text style={styles.btnPrimaryText}>Crear tribu</Text>
         </Pressable>
 
@@ -132,7 +163,13 @@ const styles = StyleSheet.create({
   },
   avatarPlaceholderText: { color: "#9aa49d", fontSize: 16, textAlign: "center" },
 
-  title: { color: "#e8eee9", fontSize: 28, fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  title: {
+    color: "#e8eee9",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
 
   input: {
     width: "100%",
@@ -144,6 +181,10 @@ const styles = StyleSheet.create({
     borderColor: "#2a322b",
     color: "#e8eee9",
     fontSize: 16,
+  },
+  inputMultiline: {
+    minHeight: 90,
+    textAlignVertical: "top",
   },
 
   btnPrimary: {

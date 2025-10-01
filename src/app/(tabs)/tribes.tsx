@@ -1,4 +1,4 @@
-import { useGlobalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams , useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -14,32 +14,48 @@ import {
 type Grupo = {
   nombre: string;
   ubicacion: string;
-  miembros: number;
+  miembrosCant: number;
   foto?: string;
+  descripcion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  miembrosNombres?: string[];
 };
 
 export default function GruposScreen() {
   const router = useRouter();
-  const params = useGlobalSearchParams();
+  const params = useLocalSearchParams<{ nombre?: string; ubicacion?: string; miembros?: string; __from?: string }>();
 
   const [grupos, setGrupos] = useState<Grupo[]>([
     {
       nombre: "Aventureros Andinos",
       ubicacion: "Mendoza",
-      miembros: 5,
+      miembrosCant: 5,
       foto: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
+      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
+      fechaInicio : "10/11/2025",
+      fechaFin : "20/11/2025",
+      miembrosNombres : ["Ana", "Luis", "Martín", "Sofía", "Pablo"],
     },
     {
       nombre: "Exploradores Patagónicos",
       ubicacion: "Bariloche",
-      miembros: 8,
+      miembrosCant: 3,
       foto: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=200&h=200&fit=crop",
+      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
+      fechaInicio : "10/11/2025",
+      fechaFin : "20/11/2025",
+      miembrosNombres : ["Ana","Martín", "Sofía"],
     },
     {
       nombre: "Caminantes Urbanos",
       ubicacion: "Buenos Aires",
-      miembros: 3,
+      miembrosCant: 8,
       foto: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200&h=200&fit=crop",
+      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
+      fechaInicio : "10/11/2025",
+      fechaFin : "20/11/2025",
+      miembrosNombres : ["Ana","Martín", "Sofía","Juan","Pedro","Julian","Milagros","Eugenia"],
     },
   ]);
 
@@ -47,17 +63,17 @@ export default function GruposScreen() {
 
   // Si venimos de CrearGrupoScreen, agregamos el grupo nuevo
   useEffect(() => {
-    if (params.nombre && params.ubicacion && params.miembros) {
+    if (params.__from === "create" && params.nombre && params.ubicacion && params.miembros)  {
       const nuevoGrupo: Grupo = {
         nombre: params.nombre as string,
         ubicacion: params.ubicacion as string,
-        miembros: Number(params.miembros),
+        miembrosCant: Number(params.miembros),
         foto:
           "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
       };
       setGrupos((prev) => [nuevoGrupo, ...prev]);
     }
-  }, [params]);
+  }, [params.__from, params.nombre, params.ubicacion, params.miembros]);
 
   const gruposFiltrados = grupos.filter((g) =>
     g.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -89,7 +105,21 @@ export default function GruposScreen() {
           <Pressable
             key={index}
             style={styles.grupoCard}
-            // onPress={() => router.push(`/grupo/${grupo.nombre}`)}
+             onPress={() =>
+               router.push({
+                 pathname: "/(stack)/singleTribe",
+                 params: {       
+                    nombre: grupo.nombre,
+                    ubicacion: grupo.ubicacion,
+                    miembrosCant: String(grupo.miembrosCant),
+                      foto: grupo.foto ?? "",
+                      descripcion: grupo.descripcion ?? "",
+                      fechaInicio: grupo.fechaInicio ?? "",
+                      fechaFin: grupo.fechaFin ?? "",
+                      miembrosNombres: JSON.stringify(grupo.miembrosNombres ?? []), 
+                 },
+              })
+            }
           >
             {/* Foto circular */}
             <Image
@@ -101,7 +131,7 @@ export default function GruposScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
               <Text style={styles.grupoInfo}>
-                {grupo.ubicacion} • {grupo.miembros} miembros
+                {grupo.ubicacion} • {grupo.miembrosCant} miembros
               </Text>
             </View>
           </Pressable>

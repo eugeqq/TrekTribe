@@ -1,9 +1,22 @@
-import { useRouter } from "expo-router";
 import React from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 export default function GrupoScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+      nombre?: string;
+      ubicacion?: string;
+      miembrosCant?: string;     // siempre llega string
+      foto?: string;
+      descripcion?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+      miembrosNombres?: string;  // JSON string
+  }>();
+    
 
   const handlePress = (funcionalidad: string) => {
     alert(`Ir a: ${funcionalidad}`);
@@ -13,16 +26,31 @@ export default function GrupoScreen() {
     alert(`Ir al perfil de: ${nombre}`);
   };
 
-  // Datos de ejemplo
-  const descripcion = "Un viaje increíble a la Patagonia, explorando montañas y lagos.";
-  const ubicacion = "Bariloche, Argentina";
-  const fechaInicio = "10/11/2025";
-  const fechaFin = "20/11/2025";
-  const miembros = ["Ana", "Luis", "Martín", "Sofía"];
+
+    const nombreGrupo   = params.nombre ?? "Grupo";
+    const ubicacion     = params.ubicacion ?? "Sin ubicación";
+    const miembrosCount = params.miembrosCant ? Number(params.miembrosCant) : 0;
+    const foto          = params.foto && params.foto.length > 0
+                          ? params.foto
+                          : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d";
+    const descripcion   = params.descripcion ?? "Descripción no disponible.";
+    const fechaInicio   = params.fechaInicio ?? "—";
+    const fechaFin      = params.fechaFin ?? "—";
+  
+    let miembros: string[] = ["Ana"];
+    try {
+      if (params.miembrosNombres) {
+        const parsed = JSON.parse(String(params.miembrosNombres));
+        if (Array.isArray(parsed)) miembros = parsed as string[];
+      }
+    } catch {}
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
+      <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+        <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+      </Pressable>
         {/* Portada */}
         <View style={styles.portadaWrap}>
           <Image
@@ -33,20 +61,21 @@ export default function GrupoScreen() {
           {/* Avatar circular */}
           <View style={styles.avatarOverlay}>
             <Image
-              source={{ uri: "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d" }}
+              source={{ uri: foto }}              
               style={styles.avatar}
             />
           </View>
         </View>
 
         {/* Nombre del grupo */}
-        <Text style={styles.groupName}>Exploradores Patagonicos</Text>
+        <Text style={styles.groupName}>{nombreGrupo}</Text>
 
         {/* Descripción, ubicación, fechas, miembros */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>{descripcion}</Text>
           <Text style={styles.infoSubText}>Ubicación: {ubicacion}</Text>
           <Text style={styles.infoSubText}>Fechas: {fechaInicio} - {fechaFin}</Text>
+          <Text style={styles.infoSubText}>Total miembros: {miembrosCount}</Text>
 
           <Text style={[styles.infoSubText, { marginTop: 8 }]}>Miembros:</Text>
           <View style={styles.membersRow}>
@@ -54,7 +83,21 @@ export default function GrupoScreen() {
               <Pressable
                 key={m}
                 style={styles.memberButton}
-                onPress={() => handlePerfilMiembro(m)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(stack)/friendProfile",
+                    params: {
+                      nombre: m,
+                      apellido: "",               
+                      telefono: "",               
+                      fechaNacimiento: "",        
+                      dni: "",                    
+                      apodo: "",                  
+                      avatarUri: "",
+                      
+                    },
+                  })
+                }
               >
                 <Text style={styles.memberName}>{m}</Text>
               </Pressable>
@@ -146,4 +189,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   funcButtonText: { color: "#e8eee9", fontWeight: "600", textAlign: "center" },
+  backBtn: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1a1f1b",
+    borderWidth: 1,
+    borderColor: "#2a322b",
+    // sombrita sutil
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });
