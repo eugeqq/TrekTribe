@@ -11,3 +11,14 @@ https://console.prisma.io/cmg72zxx101apzqebuq0c2lpv/cmg7humex00mo0bfksfi9wj3q/cm
 4. Send queries from your app
 To access your database from a JavaScript/TypeScript app,
  you need to use Prisma ORM. Go here for step-by-step instructions: https://pris.ly/ppg-init
+
+
+ Voy configuararn la base de datos en schema.prisma
+ Cundo esta listo hago: npx prisma migrate dev --name="init"
+
+
+npm i ra-data-simple-prisma
+
+En mi app
+import {dataProvider} from "ra-data-simple-prisma"
+Es un atributo de un <.   dataProvider={dataProvider("/api")}>
