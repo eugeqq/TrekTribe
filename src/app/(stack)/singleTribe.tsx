@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Link } from "expo-router";
 
 export default function GrupoScreen() {
   const router = useRouter();
@@ -101,8 +102,15 @@ export default function GrupoScreen() {
         </View>
 
         <View style={styles.buttonsRow}>
+            <Link href="/(stack)/expenses" asChild>
+              <Pressable              
+                key={"gastos"}
+                style={styles.funcButton}
+              >
+                <Text style={styles.funcButtonText}>Gastos</Text>
+              </Pressable>
+            </Link>
           {[
-            "Gastos",
             "Tareas",
             "Chat",
             "Mapas",
@@ -117,6 +125,7 @@ export default function GrupoScreen() {
               <Text style={styles.funcButtonText}>{func}</Text>
             </Pressable>
           ))}
+          
         </View>
       </ScrollView>
     </SafeAreaView>

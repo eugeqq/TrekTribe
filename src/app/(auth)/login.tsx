@@ -1,20 +1,44 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View, Animated } from "react-native";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(""); 
   const router = useRouter();
 
-  const onLogin = () => {
-    // Aquí va la lógica de autenticación
-    console.log("Email:", email, "Password:", password);
-    // router.replace("/(tabs)"); // ir a las tabs después de login
+  const onLogin = async () => {
+    setErrorMessage("");  
+
+    if (!email || !password) {
+      setErrorMessage("Por favor, completa todos los campos");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage("Email o contraseña incorrectos");
+        return;
+      }
+
+      router.replace("/(tabs)/tribes");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("No se pudo conectar con el servidor");
+    }
   };
 
   const createAccount = () => {
-    router.push("/register"); // navegar a pantalla de registro
+    router.push("/register");
   };
 
   return (
@@ -22,6 +46,13 @@ export default function LoginScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Bienvenido a tu Tribu</Text>
         <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+
+        
+        {errorMessage ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         <TextInput
           value={email}
@@ -46,7 +77,6 @@ export default function LoginScreen() {
           <Text style={styles.btnPrimaryText}>Ingresar</Text>
         </Pressable>
 
-        {/* Botón de "No tengo cuenta" */}
         <Pressable style={styles.btnSecondary} onPress={createAccount}>
           <Text style={styles.btnSecondaryText}>No tengo cuenta</Text>
         </Pressable>
@@ -67,7 +97,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 16,
   },
-  title: { color: "#e8eee9", fontSize: 28, fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  title: {
+    color: "#e8eee9",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
   subtitle: { color: "#9aa49d", fontSize: 16, marginBottom: 20, textAlign: "center" },
   input: {
     backgroundColor: "#1a1f1b",
@@ -96,4 +132,14 @@ const styles = StyleSheet.create({
   btnSecondaryText: { color: "#e8eee9", fontWeight: "700", fontSize: 16 },
   btnGhost: { paddingVertical: 12, alignItems: "center" },
   btnGhostText: { color: "#9ec39f", fontSize: 14, fontWeight: "600" },
+  errorBox: {
+    backgroundColor: "#401818",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#aa2b2b",
+  },
+  errorText: { color: "#ff9e9e", textAlign: "center", fontWeight: "600" },
 });
