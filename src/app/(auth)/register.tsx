@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View,ActivityIndicator } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const [nombre, setNombre] = useState("");
@@ -63,80 +64,84 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Crear cuenta</Text>
-        <Text style={styles.subtitle}>Completa los campos para registrarte</Text>
+      <KeyboardAvoidingView style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}>
 
-        {errorMessage ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{errorMessage}</Text>
-          </View>
-        ) : null}
-        
-        {successMessage ? (
-          <View style={styles.successBox}>
-            <Text style={styles.successText}>{successMessage}</Text>
-            {isRedirecting && (
-              <View style={styles.redirectContainer}>
-                <ActivityIndicator size="small" color="#b8f5b8" />
-                <Text style={styles.redirectText}>Redirigiendo...</Text>
-              </View>
-            )}
-          </View>
-        ) : null}     
+        <View style={styles.container}>
+          <Text style={styles.title}>Crear cuenta</Text>
+          <Text style={styles.subtitle}>Completa los campos para registrarte</Text>
 
-        <TextInput
-          value={nombre}
-          onChangeText={setNombre}
-          placeholder="Nombre"
-          placeholderTextColor="#9aa49d"
-          style={styles.input}
-        />
+          {errorMessage ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
+          
+          {successMessage ? (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>{successMessage}</Text>
+              {isRedirecting && (
+                <View style={styles.redirectContainer}>
+                  <ActivityIndicator size="small" color="#b8f5b8" />
+                  <Text style={styles.redirectText}>Redirigiendo...</Text>
+                </View>
+              )}
+            </View>
+          ) : null}     
 
-        <TextInput
-          value={apellido}
-          onChangeText={setApellido}
-          placeholder="Apellido"
-          placeholderTextColor="#9aa49d"
-          style={styles.input}
-        />
+          <TextInput
+            value={nombre}
+            onChangeText={setNombre}
+            placeholder="Nombre"
+            placeholderTextColor="#9aa49d"
+            style={styles.input}
+          />
 
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor="#9aa49d"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.input}
-        />
+          <TextInput
+            value={apellido}
+            onChangeText={setApellido}
+            placeholder="Apellido"
+            placeholderTextColor="#9aa49d"
+            style={styles.input}
+          />
 
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Contraseña"
-          placeholderTextColor="#9aa49d"
-          secureTextEntry
-          style={styles.input}
-        />
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor="#9aa49d"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
+          />
 
-        <TextInput
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder="Confirmar contraseña"
-          placeholderTextColor="#9aa49d"
-          secureTextEntry
-          style={styles.input}
-        />
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Contraseña"
+            placeholderTextColor="#9aa49d"
+            secureTextEntry
+            style={styles.input}
+          />
 
-        <Pressable style={styles.btnPrimary} onPress={onRegister}>
-          <Text style={styles.btnPrimaryText}>Registrarme</Text>
-        </Pressable>
+          <TextInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirmar contraseña"
+            placeholderTextColor="#9aa49d"
+            secureTextEntry
+            style={styles.input}
+          />
 
-        <Pressable style={styles.btnGhost} onPress={goToLogin}>
-          <Text style={styles.btnGhostText}>Ya tengo cuenta</Text>
-        </Pressable>
-      </View>
+          <Pressable style={styles.btnPrimary} onPress={onRegister}>
+            <Text style={styles.btnPrimaryText}>Registrarme</Text>
+          </Pressable>
+
+          <Pressable style={styles.btnGhost} onPress={goToLogin}>
+            <Text style={styles.btnGhostText}>Ya tengo cuenta</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -202,5 +207,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-
+  keyboardView: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === "ios" ? 30 : 0,
+  },
 });

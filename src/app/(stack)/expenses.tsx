@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-// --- Tipos (Sin Cambios) ---
+
 
 type Participant = { id: string; name: string; avatar?: string };
 type Expense = {
@@ -23,12 +23,12 @@ type Expense = {
   title: string;
   amount: number;
   payerId: string;
-  createdAt: string; // ISO 8601 string
+  createdAt: string; 
   participants: string[]; 
   category?: string;
 };
 
-// --- Mocks (Sin Cambios) ---
+
 
 const MOCK_PARTICIPANTS: Participant[] = [
   { id: "u1", name: "Ana" },
@@ -42,34 +42,33 @@ const MOCK_EXPENSES: Expense[] = [
     id: "e1",
     title: "Supermercado (Semana 1)",
     amount: 18450,
-    payerId: "u2", // Bruno pagó
+    payerId: "u2", 
     createdAt: "2025-10-09T13:45:00Z",
-    participants: ["u1", "u2", "u3", "u4"], // Todos participan: 18450 / 4 = 4612.5 c/u
+    participants: ["u1", "u2", "u3", "u4"], 
     category: "Comida",
   },
   {
     id: "e2",
     title: "Nafta peajes viaje",
     amount: 32000,
-    payerId: "u1", // Ana pagó
+    payerId: "u1", 
     createdAt: "2025-10-08T19:12:00Z",
-    participants: ["u1", "u2", "u3"], // Ana, Bruno, Carla participan: 32000 / 3 = 10666.67 c/u
+    participants: ["u1", "u2", "u3"], 
     category: "Transporte",
   },
   {
     id: "e3",
     title: "Cervezas artesanales",
     amount: 5500,
-    payerId: "u4", // Diego pagó
+    payerId: "u4", 
     createdAt: "2025-10-08T21:00:00Z",
-    participants: ["u2", "u4"], // Bruno, Diego participan: 5500 / 2 = 2750 c/u
+    participants: ["u2", "u4"], 
     category: "Diversión",
   },
 ];
 
 const CURRENT_USER_ID = "u1"; 
 
-// --- Lógica Mock de Saldo (Reutilizada) ---
 
 function calculateBalances(expenses: Expense[], allParticipants: Participant[]): Record<string, number> {
     const balances: Record<string, number> = {};
@@ -104,7 +103,6 @@ function calculateBalances(expenses: Expense[], allParticipants: Participant[]):
 }
 
 
-// --- Componentes Reutilizados (Chip, LabeledInput) ---
 
 function Chip({ label, color }: { label: string; color?: string }) {
   return (
@@ -139,14 +137,12 @@ function LabeledInput(props: {
 }
 
 
-// --- Componente de Tarjeta de Gasto (CORREGIDA LA INTERACCIÓN) ---
 
 function ExpenseCard({ expense, participantsById, onEdit }: { expense: Expense, participantsById: Record<string, Participant>, onEdit: (id: string) => void }) {
     const perHead = expense.amount / expense.participants.length;
     const payer = participantsById[expense.payerId]?.name ?? "—";
     const date = new Date(expense.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
 
-    // Hacemos que la tarjeta completa sea el pressable de "ver detalles/editar"
     return (
         <Pressable onPress={() => onEdit(expense.id)} style={styles.expenseCard}>
             <View style={styles.expenseHeader}>
@@ -154,7 +150,6 @@ function ExpenseCard({ expense, participantsById, onEdit }: { expense: Expense, 
                     <Text style={styles.expenseTitle}>{expense.title}</Text>
                     <Text style={styles.dateText}>{date}</Text>
                 </View>
-                {/* Dejamos el ícono de edición, pero su función es la misma, para no anidar Pressables */}
                 <Pressable onPress={() => onEdit(expense.id)} hitSlop={10} style={styles.editButton}>
                     <Ionicons name="pencil-outline" size={16} color={C.muted} />
                 </Pressable>
@@ -183,18 +178,16 @@ function ExpenseCard({ expense, participantsById, onEdit }: { expense: Expense, 
     );
 }
 
-// --- Componente de Resumen de Saldos (Reutilizada) ---
 
 function BalanceSummary({ balances, participantsById, onSettleDebt }: { balances: Record<string, number>, participantsById: Record<string, Participant>, onSettleDebt: () => void }) {
     
-    // Positivo = Ellos te deben (CRÉDITO); Negativo = Tú les debes (DEUDA)
     const relevantBalances = Object.entries(balances)
         .filter(([, amount]) => Math.abs(amount) > 0.01)
         .map(([id, amount]) => ({
             id,
             name: participantsById[id]?.name || 'Usuario Desconocido',
             amount: amount,
-            isOwed: amount > 0, // Positivo: Te deben
+            isOwed: amount > 0, 
             color: amount > 0 ? C.accent : C.warning, 
         }));
         
@@ -222,7 +215,6 @@ function BalanceSummary({ balances, participantsById, onSettleDebt }: { balances
                 ))
             )}
             
-            {/* BOTÓN SALDAR CUENTAS */}
             {hasDebts && (
                 <Pressable style={styles.settleBtn} onPress={onSettleDebt}>
                     <Text style={styles.settleBtnText}>
@@ -235,14 +227,13 @@ function BalanceSummary({ balances, participantsById, onSettleDebt }: { balances
 }
 
 
-// --- Pantalla Principal de Gastos (CORRIGIENDO onEditExpense) ---
 
 export default function ExpensesScreen() {
   const router = useRouter();
   
-  // Estado para el Modal de Agregar/Editar Gasto
+  
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Nuevo estado para simular modo edición
+  const [isEditing, setIsEditing] = useState(false); 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
   const [draftPayer, setDraftPayer] = useState(MOCK_PARTICIPANTS[0].id);
@@ -252,7 +243,6 @@ export default function ExpensesScreen() {
   );
   const [draftCustomAmounts, setDraftCustomAmounts] = useState<Record<string, string>>({});
   
-  // Estado para el Modal de Saldar Deuda
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [settlePayeeId, setSettlePayeeId] = useState(""); 
   const [settlePayerId, setSettlePayerId] = useState(CURRENT_USER_ID); 
@@ -267,11 +257,9 @@ export default function ExpensesScreen() {
   const totalExpenses = useMemo(() => expenses.reduce((acc, e) => acc + e.amount, 0), [expenses]);
   const balances = useMemo(() => calculateBalances(expenses, MOCK_PARTICIPANTS), [expenses]);
   
-  // CORRECCIÓN: Ahora abre el modal y simula la carga de datos
   const onEditExpense = (expenseId: string) => {
       console.log(`Abriendo modal de edición para el gasto: ${expenseId}`);
       
-      // Simular que el modal se carga con datos de edición
       const expenseToEdit = expenses.find(e => e.id === expenseId);
       if (expenseToEdit) {
           setDraftTitle(expenseToEdit.title);
@@ -279,16 +267,14 @@ export default function ExpensesScreen() {
           setDraftPayer(expenseToEdit.payerId);
           setDraftSelected(expenseToEdit.participants);
           
-          setIsEditing(true); // Activa el modo edición
-          setIsCreateModalOpen(true); // Abre el modal de creación, que ahora funcionará como edición
+          setIsEditing(true); 
+          setIsCreateModalOpen(true); 
       }
   }
   
-  // Función para cerrar el modal de creación/edición y resetear estados
   const closeCreateModal = () => {
       setIsCreateModalOpen(false);
-      setIsEditing(false); // Desactiva el modo edición
-      // Resetear drafts si es necesario (para el próximo "Agregar Gasto")
+      setIsEditing(false); 
       setDraftTitle("");
       setDraftAmount("");
       setDraftPayer(MOCK_PARTICIPANTS[0].id);
@@ -297,7 +283,6 @@ export default function ExpensesScreen() {
       setDraftSplitMode("equal");
   }
   
-  // Función para abrir el modal de saldar deudas
   const openSettleModal = () => {
       setIsSettleModalOpen(true);
       const topOwer = Object.entries(balances)
@@ -308,7 +293,6 @@ export default function ExpensesScreen() {
       }
   }
 
-  // Simulación de cancelación de deuda
   const onConfirmSettle = () => {
       console.log(`CONFIRMANDO PAGO: ${settlePayerId} pagó $${settleAmount} a ${settlePayeeId}`);
       setIsSettleModalOpen(false);
@@ -317,14 +301,12 @@ export default function ExpensesScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       
-      {/* Botón de Back Flotante */}
       <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={22} color="#e8eee9" />
       </Pressable>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         
-        {/* Portada + avatar */}
         <View style={styles.portadaWrap}>
           <Image
             source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }}
@@ -339,7 +321,6 @@ export default function ExpensesScreen() {
 
         <Text style={styles.title}>Gastos del grupo</Text>
 
-        {/* --- BANNER: Próximo Viaje --- */}
         <Pressable style={[styles.card, { marginTop: 16 }]} onPress={() => console.log('Ir a detalles del viaje')}>
           <View style={styles.bannerHeader}>
             <Text style={styles.cardTitle}>Informacion general del viaje</Text>
@@ -350,9 +331,7 @@ export default function ExpensesScreen() {
           <Text style={styles.muted}>1 Diciembre 2025 - 8 Diciembre 2025</Text>
           <Text style={styles.muted}>4 participantes</Text>
         </Pressable>
-        {/* --- FIN BANNER --- */}
 
-        {/* Resumen General */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Resumen</Text>
           <View style={{ height: 8 }} />
@@ -366,15 +345,12 @@ export default function ExpensesScreen() {
           </Text>
         </View>
         
-        {/* --- Resumen de Saldos Individuales (con botón Saldar) --- */}
         <BalanceSummary 
             balances={balances} 
             participantsById={participantsById} 
             onSettleDebt={openSettleModal}
         />
-        {/* --- FIN Resumen de Saldos --- */}
-        
-        {/* --- BOTÓN PARA REGISTRAR NUEVO GASTO --- */}
+
         <View style={styles.topActionButtonContainer}>
             <Pressable style={styles.primaryBtn} onPress={() => { setIsEditing(false); setIsCreateModalOpen(true); }}>
                 <Text style={styles.primaryBtnText}>
@@ -382,9 +358,7 @@ export default function ExpensesScreen() {
                 </Text>
             </Pressable>
         </View>
-        {/* --- FIN BOTÓN --- */}
 
-        {/* Lista de movimientos */}
         <Text style={styles.sectionTitle}>Movimientos</Text>
         <FlatList
           data={expenses}
@@ -395,7 +369,7 @@ export default function ExpensesScreen() {
               <ExpenseCard 
                 expense={item} 
                 participantsById={participantsById} 
-                onEdit={onEditExpense} // Ahora llama a la función corregida
+                onEdit={onEditExpense}
               />
           )}
           ListFooterComponent={<View style={{ height: 8 }} />}
@@ -403,7 +377,6 @@ export default function ExpensesScreen() {
         />
       </ScrollView>
 
-      {/* Modal para Agregar/Editar Gasto */}
       <Modal
         visible={isCreateModalOpen}
         animationType="slide"
@@ -466,7 +439,6 @@ export default function ExpensesScreen() {
                 ))}
               </View>
               
-              {/* Opciones de división */}
               <Text style={styles.label}>Dividir</Text>
               <View style={styles.pillRow}>
                 {(["equal", "custom"] as const).map((mode) => (
@@ -484,7 +456,6 @@ export default function ExpensesScreen() {
                 ))}
               </View>
 
-              {/* Contenido para "Personalizado" */}
               {draftSplitMode === 'custom' && (
                   <View style={styles.customSplitContainer}>
                       <Text style={[styles.label, { marginBottom: 8 }]}>Montos por participante (Personalizado)</Text>
@@ -614,7 +585,6 @@ export default function ExpensesScreen() {
 }
 
 
-// --- Constantes de Estilo (Reutilizadas) ---
 
 const C = {
   bg: "#0F1310",
@@ -622,8 +592,8 @@ const C = {
   border: "#2a322b",
   text: "#e8eee9",
   muted: "#9aa49d",
-  accent: "#9ec39f", // Verde original para botones, crédito, y elementos principales
-  warning: "#d9534f", // Rojo/coral suave para indicar deuda (Tu debes)
+  accent: "#9ec39f", 
+  warning: "#d9534f", 
 };
 
 const styles = StyleSheet.create({
@@ -682,7 +652,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   
-  // --- Estilos de Card/Banner ---
   card: {
     width: "90%",
     backgroundColor: C.card,
@@ -702,7 +671,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   
-  // --- Estilos de Saldo Individual ---
   balanceRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -721,7 +689,7 @@ const styles = StyleSheet.create({
       fontWeight: '700',
   },
   settleBtn: {
-      backgroundColor: C.accent, // Usamos el verde principal
+      backgroundColor: C.accent, 
       paddingVertical: 10,
       borderRadius: 10,
       alignItems: 'center',
@@ -749,7 +717,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  // --- Estilos de Tarjeta de Gasto ---
+
   expenseCard: {
     backgroundColor: C.card,
     borderRadius: 16,

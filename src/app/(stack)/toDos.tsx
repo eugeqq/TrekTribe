@@ -21,9 +21,9 @@ type Participant = { id: string; name: string; avatar?: string };
 type Task = {
   id: string;
   title: string;
-  assignedToId: string; // ID de la persona responsable
+  assignedToId: string; 
   isCompleted: boolean;
-  dueDate: string; // Fecha límite, e.g., "2025-10-15"
+  dueDate: string; 
   category?: string;
 };
 
@@ -113,18 +113,15 @@ export default function TasksScreen() {
   const [draftAssignedTo, setDraftAssignedTo] = useState(MOCK_PARTICIPANTS[0].id);
   const [draftCategory, setDraftCategory] = useState("General");
   
-  // Estado para el Modal de EDITAR tarea
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Estados para la edición (copia de editingTask para el draft)
   const [editTitle, setEditTitle] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
   const [editAssignedTo, setEditAssignedTo] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editIsCompleted, setEditIsCompleted] = useState(false);
 
-  // Mocks
   const tasks = MOCK_TASKS;
   const participantsById = useMemo(
     () => Object.fromEntries(MOCK_PARTICIPANTS.map((p) => [p.id, p] as const)),
@@ -139,7 +136,6 @@ export default function TasksScreen() {
     const task = tasks.find(t => t.id === taskId);
     if (task) {
         setEditingTask(task);
-        // Inicializar los estados de edición con los valores de la tarea
         setEditTitle(task.title);
         setEditDueDate(task.dueDate);
         setEditAssignedTo(task.assignedToId);
@@ -181,13 +177,11 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Back flotante */}
       <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
         <Ionicons name="chevron-back" size={22} color="#e8eee9" />
       </Pressable>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Portada + avatar */}
         <View style={styles.portadaWrap}>
           <Image
             source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }}
@@ -202,7 +196,6 @@ export default function TasksScreen() {
 
         <Text style={styles.title}>Tareas del grupo</Text>
 
-        {/* --- BANNER: Próximo Viaje --- */}
         <Pressable style={[styles.card, { marginTop: 16 }]} onPress={() => console.log('Ir a detalles del viaje')}>
           <View style={styles.bannerHeader}>
             <Text style={styles.cardTitle}> Informacion general del Viaje</Text>
@@ -213,10 +206,7 @@ export default function TasksScreen() {
           <Text style={styles.muted}>1 Diciembre 2025 - 8 Diciembre 2025</Text>
           <Text style={styles.muted}>4 participantes</Text>
         </Pressable>
-        {/* --- FIN BANNER --- */}
 
-
-        {/* Resumen de Tareas */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Estado</Text>
           <View style={{ height: 8 }} />
@@ -231,7 +221,6 @@ export default function TasksScreen() {
           </Text>
         </View>
         
-        {/* --- BOTÓN PARA AGREGAR TAREA (Superior e Intuitivo) --- */}
         <View style={styles.topActionButtonContainer}>
             <Pressable style={styles.primaryBtn} onPress={() => setIsCreateModalOpen(true)}>
                 <Text style={styles.primaryBtnText}>
@@ -239,9 +228,7 @@ export default function TasksScreen() {
                 </Text>
             </Pressable>
         </View>
-        {/* --- FIN BOTÓN --- */}
 
-        {/* Lista de Tareas */}
         <Text style={styles.sectionTitle}>Pendientes</Text>
         <FlatList
           data={tasks.filter(t => !t.isCompleted)}
@@ -287,7 +274,6 @@ export default function TasksScreen() {
         />
       </ScrollView>
 
-      {/* --- Modal para CREAR Tarea --- */}
       <Modal
         visible={isCreateModalOpen}
         animationType="slide"
@@ -318,7 +304,6 @@ export default function TasksScreen() {
                 onChangeText={setDraftDueDate}
               />
 
-              {/* Selección de Categoría (Mock) */}
               <Text style={styles.label}>Categoría</Text>
               <View style={styles.pillRow}>
                 {["Reserva", "Comida", "Actividad", "Transporte", "General"].map((cat) => (
@@ -362,7 +347,6 @@ export default function TasksScreen() {
         </View>
       </Modal>
       
-      {/* --- NUEVO Modal para EDITAR Tarea --- */}
       <Modal
         visible={isEditModalOpen}
         animationType="slide"
@@ -380,7 +364,6 @@ export default function TasksScreen() {
 
             <ScrollView contentContainerStyle={{ gap: 12 }}>
               
-              {/* Opción Marcar como Completada */}
               <Pressable style={styles.checkRow} onPress={onToggleCompletionInEdit}>
                 <Ionicons
                     name={editIsCompleted ? "checkbox" : "square-outline"}
@@ -392,7 +375,6 @@ export default function TasksScreen() {
                 </Text>
               </Pressable>
               
-              {/* Campos de Edición */}
               <LabeledInput
                 label="Título"
                 value={editTitle}
@@ -404,7 +386,6 @@ export default function TasksScreen() {
                 onChangeText={setEditDueDate}
               />
 
-              {/* Edición de Categoría */}
               <Text style={styles.label}>Categoría</Text>
               <View style={styles.pillRow}>
                 {["Reserva", "Comida", "Actividad", "Transporte", "General"].map((cat) => (
@@ -422,7 +403,6 @@ export default function TasksScreen() {
                 ))}
               </View>
 
-              {/* Edición de Persona Asignada */}
               <Text style={styles.label}>Asignar a:</Text>
               <View style={styles.pillRow}>
                 {MOCK_PARTICIPANTS.map((p) => (
@@ -442,12 +422,10 @@ export default function TasksScreen() {
 
               <View style={{ height: 12 }} />
               
-              {/* Botón Guardar Cambios */}
               <Pressable style={styles.primaryBtn} onPress={onSaveChanges}>
                 <Text style={styles.primaryBtnText}>Guardar Cambios</Text>
               </Pressable>
               
-              {/* Botón Eliminar Tarea (Destructivo) */}
               <Pressable style={[styles.primaryBtn, styles.deleteBtn]} onPress={onDeleteTask}>
                 <Text style={styles.deleteBtnText}><Ionicons name="trash-outline" size={16} color="#f06292" /> Eliminar Tarea</Text>
               </Pressable>
@@ -461,7 +439,6 @@ export default function TasksScreen() {
 }
 
 
-// --- Componente para la Tarjeta de Tarea ---
 
 function TaskCard({ task, assigneeName, onToggle, onEdit, isCompleted }: { task: Task, assigneeName: string, onToggle: (id: string) => void, onEdit: (id: string) => void, isCompleted: boolean }) {
     const cardStyle = isCompleted ? styles.taskCardCompleted : styles.taskCard;
@@ -479,19 +456,16 @@ function TaskCard({ task, assigneeName, onToggle, onEdit, isCompleted }: { task:
             <View style={styles.taskContent}> 
                 <View style={styles.taskHeader}>
                     <Text style={titleStyle}>{task.title}</Text>
-                    {/* Botón de Editar */}
                     <Pressable onPress={() => onEdit(task.id)} style={styles.editButton}>
                         <Ionicons name="pencil-outline" size={16} color={C.muted} />
                     </Pressable>
                 </View>
 
-                {/* Persona Asignada */}
                 <View style={styles.row}>
                     <Ionicons name="person-circle-outline" size={16} color={C.muted} />
                     <Text style={styles.rowText}>Asignada a: {assigneeName}</Text>
                 </View>
 
-                {/* Fecha Límite */}
                 <View style={styles.row}>
                     <Ionicons name="calendar-outline" size={16} color={isOverdue ? '#f06292' : C.muted} />
                     <Text style={[styles.rowText, isOverdue && {color: '#f06292', fontWeight: 'bold'}]}>
@@ -510,7 +484,6 @@ function TaskCard({ task, assigneeName, onToggle, onEdit, isCompleted }: { task:
 }
 
 
-// --- Constantes de Estilo ---
 
 const C = {
   bg: "#0F1310",
@@ -518,8 +491,8 @@ const C = {
   border: "#2a322b",
   text: "#e8eee9",
   muted: "#9aa49d",
-  accent: "#9ec39f", // Verde
-  delete: "#f06292", // Rojo suave para acciones destructivas
+  accent: "#9ec39f", 
+  delete: "#f06292", 
 };
 
 const styles = StyleSheet.create({
@@ -614,7 +587,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  // --- Estilos de Tarjeta de Tarea ---
   taskCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -637,7 +609,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   taskCardOverdue: {
-      borderColor: C.delete, // Rojo suave para vencidas
+      borderColor: C.delete, 
       backgroundColor: '#201a1c',
   },
   taskToggleArea: {
@@ -660,7 +632,6 @@ const styles = StyleSheet.create({
   editButton: {
       padding: 4, 
   },
-  // --- Fin Estilos de Tarjeta de Tarea ---
 
   row: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   rowText: { fontSize: 13, color: C.muted },
@@ -676,7 +647,6 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 12, color: C.accent },
   
-  // --- Estilos de Modal ---
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -731,7 +701,6 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
   
-  // Nuevo estilo para el botón de eliminar
   deleteBtn: {
       backgroundColor: 'transparent',
       marginTop: 8,
