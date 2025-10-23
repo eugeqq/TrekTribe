@@ -7,13 +7,13 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 
@@ -301,11 +301,11 @@ export default function ExpensesScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       
-      <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
-      </Pressable>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+            <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+        </Pressable>
         
         <View style={styles.portadaWrap}>
           <Image
