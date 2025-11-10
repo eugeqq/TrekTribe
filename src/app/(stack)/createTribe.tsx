@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -66,13 +67,14 @@ export default function CrearGrupoScreen() {
     }
   
     try {
+      const userId = await AsyncStorage.getItem("userId");
       const formData = new FormData();
       formData.append("nombre", nombre);
       formData.append("ubicacion", ubicacion);
       formData.append("descripcion", descripcion);
       formData.append("fechaInicio", fechaInicio);
       formData.append("fechaFin", fechaFin);
-      formData.append("creadorId", "1");
+      formData.append("creadorId", userId || "");
 
       if (imagenUri) {
         formData.append("imagen", {

@@ -1,4 +1,5 @@
-import { useLocalSearchParams , useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -8,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 
 type Grupo = {
@@ -24,69 +25,49 @@ type Grupo = {
 
 export default function GruposScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ nombre?: string; ubicacion?: string; miembros?: string; __from?: string }>();
-
-  const [grupos, setGrupos] = useState<Grupo[]>([
-    {
-      nombre: "Aventureros Andinos",
-      ubicacion: "Mendoza",
-      miembrosCant: 5,
-      foto: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
-      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
-      fechaInicio : "10/11/2025",
-      fechaFin : "20/11/2025",
-      miembrosNombres : ["Ana", "Luis", "Martín", "Sofía", "Pablo"],
-    },
-    {
-      nombre: "Exploradores Patagónicos",
-      ubicacion: "Bariloche",
-      miembrosCant: 3,
-      foto: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=200&h=200&fit=crop",
-      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
-      fechaInicio : "10/11/2025",
-      fechaFin : "20/11/2025",
-      miembrosNombres : ["Ana","Martín", "Sofía"],
-    },
-    {
-      nombre: "Caminantes Urbanos",
-      ubicacion: "Buenos Aires",
-      miembrosCant: 8,
-      foto: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200&h=200&fit=crop",
-      descripcion : "Un viaje increíble a la Patagonia, explorando montañas y lagos.",
-      fechaInicio : "10/11/2025",
-      fechaFin : "20/11/2025",
-      miembrosNombres : ["Ana","Martín", "Sofía","Juan","Pedro","Julian","Milagros","Eugenia"],
-    },
-  ]);
-
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  
   useEffect(() => {
-    if (params.__from === "create" && params.nombre && params.ubicacion && params.miembros)  {
-      const nuevoGrupo: Grupo = {
-        nombre: params.nombre as string,
-        ubicacion: params.ubicacion as string,
-        miembrosCant: Number(params.miembros),
-        foto:
-          "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200&h=200&fit=crop",
-      };
-      setGrupos((prev) => [nuevoGrupo, ...prev]);
-    }
-  }, [params.__from, params.nombre, params.ubicacion, params.miembros]);
+    const fetchGrupos = async () => {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+        console.log("Fetching:", `${process.env.EXPO_PUBLIC_API_URL}/viajes/${userId}`);
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${userId}`);
+        const data = await res.json();
+        setGrupos(data);
+      } catch (error) {
+        console.error("Error al cargar grupos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrupos();
+  }, []);
 
   const gruposFiltrados = grupos.filter((g) =>
     g.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   const crearGrupo = () => {
-    router.push("/createTribe"); 
+    router.push("/createTribe");
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Text style={{ color: "white", textAlign: "center", marginTop: 50 }}>
+          Cargando grupos...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        
         <View style={styles.rowTop}>
           <TextInput
             placeholder="Buscar grupo..."
@@ -100,34 +81,27 @@ export default function GruposScreen() {
           </Pressable>
         </View>
 
-        
-        {gruposFiltrados.map((grupo, index) => (
+        {gruposFiltrados.map((grupo) => (
           <Pressable
-            key={index}
+            key={grupo.id}
             style={styles.grupoCard}
-             onPress={() =>
-               router.push({
-                 pathname: "/(stack)/singleTribe",
-                 params: {       
-                    nombre: grupo.nombre,
-                    ubicacion: grupo.ubicacion,
-                    miembrosCant: String(grupo.miembrosCant),
-                      foto: grupo.foto ?? "",
-                      descripcion: grupo.descripcion ?? "",
-                      fechaInicio: grupo.fechaInicio ?? "",
-                      fechaFin: grupo.fechaFin ?? "",
-                      miembrosNombres: JSON.stringify(grupo.miembrosNombres ?? []), 
-                 },
+            onPress={() =>
+              router.push({
+                pathname: "/(stack)/singleTribe",
+                params: {
+                  nombre: grupo.nombre,
+                  ubicacion: grupo.ubicacion,
+                  miembrosCant: String(grupo.miembrosCant),
+                  foto: grupo.foto ?? "",
+                  descripcion: grupo.descripcion ?? "",
+                  fechaInicio: grupo.fechaInicio ?? "",
+                  fechaFin: grupo.fechaFin ?? "",
+                  miembrosNombres: JSON.stringify(grupo.miembrosNombres ?? []),
+                },
               })
             }
           >
-            
-            <Image
-              source={{ uri: grupo.foto }}
-              style={styles.grupoFoto}
-              resizeMode="cover"
-            />
-            
+            <Image source={{ uri: grupo.foto }} style={styles.grupoFoto} resizeMode="cover" />
             <View style={{ flex: 1 }}>
               <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
               <Text style={styles.grupoInfo}>
