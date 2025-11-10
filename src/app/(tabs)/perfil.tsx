@@ -1,6 +1,7 @@
-import React, {  useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import EditableRow  from "../../components/EditableRow"
+import EditableRow from "../../components/EditableRow";
 
 type Profile = {
   nombre: string;
@@ -30,6 +31,8 @@ const KEYBOARD: Partial<Record<FieldKey, "default" | "numeric" | "email-address"
 };
 
 export default function PerfilScreen() {
+  const USER_ID = 1;
+
   const [data, setData] = useState<Profile>({
     nombre: "",
     apellido: "",
@@ -43,6 +46,35 @@ export default function PerfilScreen() {
   const [open, setOpen] = useState(false);
   const [field, setField] = useState<FieldKey | null>(null);
   const [tempValue, setTempValue] = useState("");
+useEffect(() => {
+  const loadUser = async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) return;
+
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`);
+      const userData = await res.json();
+
+      if (res.ok) {
+        setData({
+          nombre: userData.nombre || "",
+          apellido: userData.apellido || "",
+          telefono: userData.telefono || "",
+          fechaNacimiento: userData.fechaNacimiento || "",
+          dni: userData.dni || "",
+          apodo: userData.apodo || "",
+          avatarUri: userData.avatarUri || undefined,
+        });
+      } else {
+        console.error("Error cargando usuario:", userData.error);
+      }
+    } catch (err) {
+      console.error("Error de conexión:", err);
+    }
+  };
+
+  loadUser();
+}, []);
 
   const label = field ? LABELS[field] : "";
   const kbType = (field && KEYBOARD[field]) || "default";

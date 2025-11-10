@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -30,7 +31,7 @@ export default function LoginScreen() {
         setErrorMessage("Email o contraseña incorrectos");
         return;
       }
-
+      await AsyncStorage.setItem("userId", data.id.toString());
       router.replace("/(tabs)/tribes");
     } catch (error) {
       console.error(error);
