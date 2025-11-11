@@ -1,57 +1,37 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    Alert,
     FlatList,
     Image,
     Modal,
     Platform,
     Pressable,
+    RefreshControl,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    TouchableOpacity,
     View,
 } from "react-native";
 
-
+type Grupo = {
+    id: number;
+    nombre: string;
+  };
+  
 type Activity = {
-  id: string;
+  id: string;             
   title: string;
   description?: string;
-  dateTime: string;
+  dateTime: string;       
   category?: string;
   location?: string;
 };
-
-const MOCK_ACTIVITIES: Activity[] = [
-  {
-    id: "a1",
-    title: "Llegada al hotel y check-in",
-    description: "Llegada a Roma y alojamiento en el Hotel Mediterraneo.",
-    dateTime: "2025-12-01T15:00",
-    category: "Traslado",
-    location: "Hotel Mediterraneo",
-  },
-  {
-    id: "a2",
-    title: "Cena grupal de bienvenida",
-    description: "Cena en Trattoria da Enzo, reserva confirmada para las 20:30.",
-    dateTime: "2025-12-01T20:30",
-    category: "Comida",
-    location: "Trastevere",
-  },
-  {
-    id: "a3",
-    title: "Tour guiado por el Coliseo",
-    description: "Visita guiada con entradas prioritarias, guía en español.",
-    dateTime: "2025-12-02T10:00",
-    category: "Actividad",
-    location: "Coliseo Romano",
-  },
-];
-
 
 function Chip({ label, color }: { label: string; color?: string }) {
   return (
@@ -88,15 +68,106 @@ function LabeledInput(props: {
   );
 }
 
+const C = {
+  bg: "#0F1310",
+  card: "#1a1f1b",
+  border: "#2a322b",
+  text: "#e8eee9",
+  muted: "#9aa49d",
+  accent: "#9ec39f",
+  delete: "#f06292",
+};
+
+async function safeJson(res: Response) {
+    const text = await res.text();
+    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
+  }
 
 export default function ItineraryScreen() {
   const router = useRouter();
-  const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES);
+  const { viajeId, nombre } = useLocalSearchParams<{ viajeId?: string; nombre?: string }>();
+
+  const API = process.env.EXPO_PUBLIC_API_URL;
+  
+  const [grupo, setGrupo] = useState<Grupo | null>({ id: Number(viajeId), nombre: nombre ?? "Grupo" });
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // ---- Helpers ----
+  const dateFormat = useCallback((iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString("es-AR", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, []);
+
+  const fetchActivities = useCallback(async () => {
+    if (!API || !viajeId) return;
+    try {
+      setLoading(true);
+        const res = await fetch(`${API}/viajes/${viajeId}/itinerario`);
+        const data = await res.json();
+        const rows: Activity[] = (Array.isArray(data) ? data : []).map((a: any) => ({
+        id: String(a.id),
+        title: a.titulo ?? "",               // 👈 titulo
+        description: a.descripcion ?? "",    // 👈 descripcion
+        dateTime: a.fechaHora ?? "",         // 👈 fechaHora (ISO)
+        category: "",                        // 👈 no existe en modelo
+        location: "",                        // 👈 no existe en modelo
+        }));
+        setActivities(rows);
+
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Error", "No se pudieron cargar las actividades.");
+    } finally {
+      setLoading(false);
+    }
+  }, [API, viajeId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchActivities();
+    setRefreshing(false);
+  }, [fetchActivities]);
+
+  useEffect(() => {
+    (async () => {
+      const uid = await AsyncStorage.getItem("userId");
+      setUserId(uid);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (API && viajeId) fetchActivities();
+  }, [API, viajeId, fetchActivities]);
 
   const openActivity = (activity: Activity) => {
     setSelectedActivity(activity);
+    setIsModalOpen(true);
+  };
+
+  const openCreate = () => {
+    const now = new Date();
+    const isoLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16); // yyyy-MM-ddTHH:mm (sin segundos) para input rápido si quisieras usar un picker
+    setSelectedActivity({
+      id: "new",
+      title: "",
+      description: "",
+      dateTime: isoLocal,
+      category: "",
+      location: "",
+    });
     setIsModalOpen(true);
   };
 
@@ -105,11 +176,186 @@ export default function ItineraryScreen() {
     setIsModalOpen(false);
   };
 
-  const onSaveChanges = () => {
-    if (!selectedActivity) return;
-    console.log("Guardando cambios de actividad:", selectedActivity.id);
-    closeModal();
+  const validate = (a: Activity) => {
+    if (!a.title?.trim()) return "Falta el título.";
+    if (!a.dateTime?.trim()) return "Falta la fecha y hora.";
+    return null;
   };
+
+  const onSaveChanges = async () => {
+    console.log("onSaveChanges click", {
+      hasAPI: !!API,
+      viajeId,
+      hasSelected: !!selectedActivity,
+    });
+  
+    if (!API || !viajeId || !selectedActivity) {
+      Alert.alert(
+        "Falta configuración",
+        `API: ${API ?? "undefined"}\nviajeId: ${String(viajeId)}\nselectedActivity: ${selectedActivity ? "ok" : "null"}`
+      );
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        titulo: selectedActivity.title?.trim(),
+        descripcion: selectedActivity.description?.trim() || null,
+        fechaHora: normalizeDate(selectedActivity.dateTime),
+      };
+  
+      if (selectedActivity.id === "new") {
+        const res = await fetch(`${API}/viajes/${viajeId}/itinerario`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      
+        console.log("POST /viajes/:id/itinerario ->", res.status);
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`POST itinerario ${res.status} ${txt}`);
+        }
+      
+        const created = await safeJson(res);
+        // si el backend no devuelve nada, created.id será undefined
+        if (!created.id) {
+          // hacemos refetch para garantizar persistencia real
+          await fetchActivities();
+        } else {
+          const createdRow: Activity = {
+            id: String(created.id),
+            title: created.titulo ?? payload.titulo!,
+            description: created.descripcion ?? payload.descripcion ?? "",
+            dateTime: created.fechaHora ?? payload.fechaHora,
+            category: "",
+            location: "",
+          };
+          setActivities((prev) => [createdRow, ...prev]);
+        }
+      
+        closeModal();
+        Alert.alert("Listo", "Actividad creada");
+      } else {
+        const res = await fetch(`${API}/viajes/itinerario/${selectedActivity.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });      
+        console.log("PUT /itinerario/:id ->", res.status);
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`PUT itinerario ${res.status} ${txt}`);
+        }
+      
+        const updated = await safeJson(res);
+        if (!updated.id) {
+          await fetchActivities();
+        } else {
+          setActivities((prev) =>
+            prev.map((x) =>
+              x.id === selectedActivity.id
+                ? {
+                    ...x,
+                    id: String(updated.id ?? x.id),
+                    title: updated.titulo ?? x.title,
+                    description: updated.descripcion ?? x.description,
+                    dateTime: updated.fechaHora ?? x.dateTime,
+                  }
+                : x
+            )
+          );
+        }
+      
+        closeModal();
+        Alert.alert("Listo", "Actividad actualizada");
+      }
+      
+      
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Error", "No se pudieron guardar los cambios.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!API || !viajeId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/viajes/${viajeId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const v = await res.json();
+        // ajustá los nombres según tu API: nombre vs titulo, etc.
+        setGrupo({ id: v.id, nombre: v.nombre ?? `#${viajeId}` });
+      } catch (e) {
+        console.error(e);
+        setGrupo(null);
+      }
+    })();
+  }, [API, viajeId]);
+  
+
+  const onDelete = (activity: Activity) => {
+    Alert.alert("Eliminar", "¿Querés eliminar esta actividad?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          if (!API) return;
+          const url = `${API}/viajes/itinerario/${activity.id}`;
+          try {
+            console.log("DELETE URL ->", url, "id:", activity.id);
+  
+            // Optimista: sacamos de UI
+            setActivities(prev => prev.filter(x => x.id !== activity.id));
+  
+            const res = await fetch(url, { method: "DELETE" });
+            console.log("DELETE status:", res.status);
+  
+            // si el back respondió JSON (como arriba), lo vemos:
+            let payload: any = null;
+            try { payload = await res.json(); } catch {}
+            console.log("DELETE payload:", payload);
+  
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status} ${payload?.error ?? ""}`);
+            }
+  
+            // todo ok: opcional refetch para asegurar
+            // await fetchActivities();
+  
+          } catch (e: any) {
+            console.error("DELETE error:", e);
+            Alert.alert("Error", "No se pudo eliminar. Recargando lista…");
+            // revertir o refetchear
+            fetchActivities();
+          }
+        },
+      },
+    ]);
+  };
+  
+
+  // Normaliza: si viene "2025-12-01T20:30" lo convertimos a ISO con zona
+  function normalizeDate(input: string) {
+    if (/Z$/.test(input)) return input;
+    const dt = new Date(input);
+    if (!isNaN(dt.getTime())) return dt.toISOString();
+    return input;
+  }
+
+  const headerSubtitle = useMemo(() => {
+    // Sólo decorativo; podrías traer estas fechas desde el backend del viaje
+    return "1 al 8 de Diciembre 2025";
+  }, []);
+
+
+  const nombreGrupo = grupo?.nombre ?? "Grupo";
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -117,7 +363,10 @@ export default function ItineraryScreen() {
         <Ionicons name="chevron-back" size={22} color="#e8eee9" />
       </Pressable>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />}
+      >
         <View style={styles.portadaWrap}>
           <Image
             source={{
@@ -134,74 +383,119 @@ export default function ItineraryScreen() {
 
         <Text style={styles.title}>Itinerario del Viaje</Text>
 
-        <Pressable style={[styles.card, { marginTop: 16 }]}>
-          <Text style={styles.cardTitle}>Roma, Italia</Text>
-          <Text style={styles.muted}>1 al 8 de Diciembre 2025</Text>
+        <Pressable style={[styles.card, { marginTop: 16 }]} disabled>
+            <Text style={styles.cardTitle}>Viaje {nombreGrupo}</Text>
+            <Text style={styles.muted}>{headerSubtitle}</Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>Actividades programadas</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 12 }}>
+          <Text style={styles.sectionTitle}>Actividades programadas</Text>
+          <Pressable onPress={openCreate} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name="add-circle-outline" size={20} color={C.accent} />
+            <Text style={{ color: C.accent, fontWeight: "700" }}>Nueva</Text>
+          </Pressable>
+        </View>
 
-        <FlatList
-          data={activities}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => (
-            <Pressable onPress={() => openActivity(item)}>
-              <View style={styles.taskCard}>
-                <View style={styles.taskContent}>
-                  <Text style={styles.taskTitle}>{item.title}</Text>
-                  <View style={styles.row}>
-                    <Ionicons name="calendar-outline" size={16} color={C.muted} />
-                    <Text style={styles.rowText}>
-                      {new Date(item.dateTime).toLocaleString("es-AR", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Text>
-                  </View>
-                  {item.location && (
-                    <View style={styles.row}>
-                      <Ionicons name="location-outline" size={16} color={C.muted} />
-                      <Text style={styles.rowText}>{item.location}</Text>
-                    </View>
-                  )}
-                  {item.category && (
-                    <View style={styles.chips}>
-                      <Chip label={item.category} color={C.accent} />
-                    </View>
-                  )}
-                </View>
-              </View>
-            </Pressable>
+        <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+          {loading ? (
+            <Text style={[styles.muted, { textAlign: "center", marginVertical: 20 }]}>Cargando…</Text>
+          ) : (
+            <FlatList
+              data={activities}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+// 👉 renderItem (tachito con stopPropagation y buen hitSlop)
+renderItem={({ item }) => (
+    <View style={styles.taskCard}>
+      <View style={styles.taskContent}>
+  
+        {/* Fila superior: título (abre) + tachito (borra) */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          {/* Zona que abre el detalle */}
+          <TouchableOpacity
+            style={{ flex: 1, paddingRight: 12 }}
+            onPress={() => {
+              console.log("openActivity", item.id);
+              openActivity(item);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.taskTitle}>{item.title}</Text>
+          </TouchableOpacity>
+  
+          {/* Tachito: botón independiente */}
+          <TouchableOpacity
+            onPress={() => {
+              console.log("trash pressed", item.id);
+              onDelete(item);
+            }}
+            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            activeOpacity={0.6}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar actividad"
+          >
+            <Ionicons name="trash-outline" size={20} color={C.delete} />
+          </TouchableOpacity>
+        </View>
+  
+        {/* Contenido inferior: también abre detalle */}
+        <TouchableOpacity
+          onPress={() => {
+            console.log("openActivity (row)", item.id);
+            openActivity(item);
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={styles.row}>
+            <Ionicons name="calendar-outline" size={16} color={C.muted} />
+            <Text style={styles.rowText}>{dateFormat(item.dateTime)}</Text>
+          </View>
+  
+          {item.location ? (
+            <View style={styles.row}>
+              <Ionicons name="location-outline" size={16} color={C.muted} />
+              <Text style={styles.rowText}>{item.location}</Text>
+            </View>
+          ) : null}
+  
+          {item.category ? (
+            <View style={styles.chips}>
+              <Chip label={item.category} color={C.accent} />
+            </View>
+          ) : null}
+        </TouchableOpacity>
+  
+      </View>
+    </View>
+  )}
+  
+  
+              
+
+              ListEmptyComponent={
+                <Text style={[styles.muted, { textAlign: "center", marginVertical: 20 }]}>
+                  No hay actividades registradas.
+                </Text>
+              }
+            />
           )}
-          ListEmptyComponent={
-            <Text
-              style={[
-                styles.muted,
-                { textAlign: "center", marginVertical: 20 },
-              ]}
-            >
-              No hay actividades registradas.
-            </Text>
-          }
-        />
+        </View>
       </ScrollView>
 
-      
+      {/* Modal Crear/Editar */}
       <Modal
         visible={isModalOpen}
         animationType="slide"
         transparent
-        onRequestClose={closeModal}
+        onRequestClose={() => (saving ? undefined : closeModal())}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Detalle de la Actividad</Text>
-              <Pressable onPress={closeModal}>
+              <Text style={styles.modalTitle}>
+                {selectedActivity?.id === "new" ? "Nueva Actividad" : "Detalle de la Actividad"}
+              </Text>
+              <Pressable onPress={saving ? undefined : closeModal}>
                 <Ionicons name="close" size={22} color="#e8eee9" />
               </Pressable>
             </View>
@@ -211,41 +505,32 @@ export default function ItineraryScreen() {
                 <LabeledInput
                   label="Título"
                   value={selectedActivity.title}
-                  onChangeText={(t) =>
-                    setSelectedActivity({ ...selectedActivity, title: t })
-                  }
+                  onChangeText={(t) => setSelectedActivity({ ...selectedActivity, title: t })}
                 />
                 <LabeledInput
                   label="Descripción"
                   value={selectedActivity.description || ""}
-                  onChangeText={(t) =>
-                    setSelectedActivity({ ...selectedActivity, description: t })
-                  }
+                  onChangeText={(t) => setSelectedActivity({ ...selectedActivity, description: t })}
                 />
                 <LabeledInput
                   label="Lugar"
                   value={selectedActivity.location || ""}
-                  onChangeText={(t) =>
-                    setSelectedActivity({ ...selectedActivity, location: t })
-                  }
+                  onChangeText={(t) => setSelectedActivity({ ...selectedActivity, location: t })}
                 />
                 <LabeledInput
-                  label="Fecha y Hora"
+                  label="Fecha y Hora (ISO/local)"
                   value={selectedActivity.dateTime}
-                  onChangeText={(t) =>
-                    setSelectedActivity({ ...selectedActivity, dateTime: t })
-                  }
+                  onChangeText={(t) => setSelectedActivity({ ...selectedActivity, dateTime: t })}
+                  placeholder="Ej: 2025-12-01T20:30"
                 />
                 <LabeledInput
                   label="Categoría"
                   value={selectedActivity.category || ""}
-                  onChangeText={(t) =>
-                    setSelectedActivity({ ...selectedActivity, category: t })
-                  }
+                  onChangeText={(t) => setSelectedActivity({ ...selectedActivity, category: t })}
                 />
 
-                <Pressable style={styles.primaryBtn} onPress={onSaveChanges}>
-                  <Text style={styles.primaryBtnText}>Guardar Cambios</Text>
+                <Pressable style={[styles.primaryBtn, saving && { opacity: 0.7 }]} onPress={onSaveChanges} disabled={saving}>
+                  <Text style={styles.primaryBtnText}>{saving ? "Guardando..." : "Guardar Cambios"}</Text>
                 </Pressable>
               </ScrollView>
             )}
@@ -256,17 +541,7 @@ export default function ItineraryScreen() {
   );
 }
 
-// --- Estilos (idénticos a TasksScreen) ---
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-  delete: "#f06292",
-};
-
+// ---------- Estilos (sin cambios fuertes) ----------
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   backBtn: {
@@ -335,9 +610,6 @@ const styles = StyleSheet.create({
     color: C.text,
     fontWeight: "700",
     fontSize: 16,
-    marginTop: 18,
-    marginBottom: 8,
-    paddingHorizontal: 16,
   },
   taskCard: {
     backgroundColor: C.card,

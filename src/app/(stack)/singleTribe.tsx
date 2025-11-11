@@ -144,7 +144,7 @@ export default function GrupoScreen() {
             </Pressable>
           ))}
 
-          <Link href={{ pathname: "/(stack)/itinerary", params: { grupoId: String(data.id) } }} asChild>
+          <Link href={{ pathname: "/(stack)/itinerary", params: { viajeId: String(data.id), nombre: data.nombre } }} asChild>
             <Pressable key={"itinerario"} style={styles.funcButton}>
               <Text style={styles.funcButtonText}>Itinerario</Text>
             </Pressable>
