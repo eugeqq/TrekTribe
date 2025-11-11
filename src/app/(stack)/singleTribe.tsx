@@ -138,11 +138,12 @@ export default function GrupoScreen() {
             </Pressable>
           </Link>
 
-          {["Tareas","Chat","Mapas","Documentos"].map((func) => (
-            <Pressable key={func} style={styles.funcButton} onPress={() => handlePress(func)}>
-              <Text style={styles.funcButtonText}>{func}</Text>
+    
+          <Link href={{ pathname: "/(stack)/toDos", params: { grupoId: String(data.id) } }} asChild>
+            <Pressable key={"tareas"} style={styles.funcButton}>
+              <Text style={styles.funcButtonText}>Tareas</Text>
             </Pressable>
-          ))}
+          </Link>
 
           <Link href={{ pathname: "/(stack)/itinerary", params: { viajeId: String(data.id), nombre: data.nombre } }} asChild>
             <Pressable key={"itinerario"} style={styles.funcButton}>
