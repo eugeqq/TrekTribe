@@ -9,14 +9,15 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
 
 type Grupo = {
+  id: number;                 
   nombre: string;
   ubicacion: string;
   miembrosCant: number;
-  foto?: string;
+  foto?: string | null;
   descripcion?: string;
   fechaInicio?: string;
   fechaFin?: string;
@@ -33,26 +34,56 @@ export default function GruposScreen() {
     const fetchGrupos = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
-        console.log("Fetching:", `${process.env.EXPO_PUBLIC_API_URL}/viajes/${userId}`);
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${userId}`);
-        const data = await res.json();
-        setGrupos(data);
+        console.log("userId en AsyncStorage:", userId);
+  
+        if (!userId) {
+          console.warn("No hay userId en AsyncStorage");
+          setGrupos([]);
+          return;
+        }
+  
+        const url = `${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`;
+        console.log("URL fetch:", url);
+  
+        const res = await fetch(url);
+        const text = await res.text();      
+  
+        console.log("HTTP", res.status, "Body:", text);
+  
+        if (!res.ok) throw new Error(`HTTP ${res.status} - ${text}`);
+  
+        const data = JSON.parse(text);
+  
+        const normalizados: Grupo[] = (Array.isArray(data) ? data : []).map((v: any) => ({
+          id: Number(v.id),
+          nombre: v.nombre ?? "Sin nombre",
+          ubicacion: v.ubicacion ?? "—",
+          miembrosCant: Array.isArray(v.miembros) ? v.miembros.length : v.miembrosCant ?? 0,
+          foto: v.foto ?? v.imagen ?? null,
+          descripcion: v.descripcion ?? "",
+          fechaInicio: v.fechaInicio ?? null,
+          fechaFin: v.fechaFin ?? null,
+        }));
+        setGrupos(normalizados);
       } catch (error) {
         console.error("Error al cargar grupos:", error);
+        setGrupos([]);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchGrupos();
   }, []);
 
+
+
   const gruposFiltrados = grupos.filter((g) =>
-    g.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    (g.nombre ?? "").toLowerCase().includes(busqueda.toLowerCase())
   );
 
   const crearGrupo = () => {
-    router.push("/createTribe");
+    router.push("/(stack)/createTribe");
   };
 
   if (loading) {
@@ -88,20 +119,20 @@ export default function GruposScreen() {
             onPress={() =>
               router.push({
                 pathname: "/(stack)/singleTribe",
-                params: {
-                  nombre: grupo.nombre,
-                  ubicacion: grupo.ubicacion,
-                  miembrosCant: String(grupo.miembrosCant),
-                  foto: grupo.foto ?? "",
-                  descripcion: grupo.descripcion ?? "",
-                  fechaInicio: grupo.fechaInicio ?? "",
-                  fechaFin: grupo.fechaFin ?? "",
-                  miembrosNombres: JSON.stringify(grupo.miembrosNombres ?? []),
-                },
+                params: { id: String(grupo.id) },
               })
             }
           >
-            <Image source={{ uri: grupo.foto }} style={styles.grupoFoto} resizeMode="cover" />
+            <Image
+              source={{
+                uri:
+                  grupo.foto && grupo.foto.length > 0
+                    ? grupo.foto
+                    : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d",
+              }}
+              style={styles.grupoFoto}
+              resizeMode="cover"
+            />
             <View style={{ flex: 1 }}>
               <Text style={styles.grupoNombre}>{grupo.nombre}</Text>
               <Text style={styles.grupoInfo}>
@@ -162,12 +193,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  grupoFoto: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-  },
+  grupoFoto: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   grupoNombre: { color: "#e8eee9", fontSize: 16, fontWeight: "700" },
   grupoInfo: { color: "#9aa49d", fontSize: 14 },
   noResults: { color: "#9aa49d", fontSize: 14, marginTop: 16 },

@@ -26,6 +26,9 @@ export default function CrearGrupoScreen() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [invitarEmails, setInvitarEmails] = useState(""); // opcional: lista de emails
+  const [invitando, setInvitando] = useState(false);
+
 
   const router = useRouter();
 
@@ -95,16 +98,52 @@ export default function CrearGrupoScreen() {
         return;
       }
   
-      const data = await response.json();
+      const data = await response.json(); 
       console.log("Tribu creada", data);
-
-
-      setSuccessMessage("Tribu creado con éxito.");
+      
+      
+      setSuccessMessage("Tribu creada con éxito.");
+      
+      
+      const emails = invitarEmails
+        .split(/[\n,;]+/g)      
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+      
+      if (emails.length > 0) {
+        try {
+          setInvitando(true);
+          const currentUserId = await AsyncStorage.getItem("userId");
+          const invites = await Promise.all(
+            emails.map(async (email) => {
+              const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${data.id}/miembros`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currentUserId: Number(currentUserId), email }),
+              });
+              const body = await res.json().catch(() => ({}));
+              return { email, ok: res.ok, status: res.status, body };
+            })
+          );
+          const fallas = invites.filter(i => !i.ok);
+          console.log("Invites:", invites);
+          if (fallas.length === 0) {
+            setSuccessMessage(`Tribu creada e invitados agregados`);
+          } else {
+            setSuccessMessage(`Tribu creada (algunos emails no se pudieron agregar)`);
+          }
+        } finally {
+          setInvitando(false);
+        }
+      } else {
+        setSuccessMessage("Tribu creada con éxito.");
+      }
+      
+      
       setIsRedirecting(true);
-
       setTimeout(() => {
         router.replace("/(tabs)/tribes");
-      }, 2000);
+      }, 1600);
     
       
     } catch (error) {
@@ -193,6 +232,16 @@ export default function CrearGrupoScreen() {
             onChangeText={setFechaFin}
             style={styles.input}
           />
+
+          <TextInput
+            placeholder="Invitar por email (separá por coma o enter)"
+            placeholderTextColor="#9aa49d"
+            value={invitarEmails}
+            onChangeText={setInvitarEmails}
+            style={[styles.input, styles.inputMultiline]}
+            multiline
+          />
+
 
           <Pressable
             style={[styles.btnPrimary, !ready && { opacity: 0.5 }]}

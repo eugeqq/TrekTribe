@@ -1,67 +1,106 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+
+type Miembro = { id: string | number; nombre: string };
+type Grupo = {
+  id: string | number;
+  nombre: string;
+  ubicacion?: string;
+  descripcion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  foto?: string | null;
+  miembros?: Miembro[];
+};
 
 export default function GrupoScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{
-      nombre?: string;
-      ubicacion?: string;
-      miembrosCant?: string;
-      foto?: string;
-      descripcion?: string;
-      fechaInicio?: string;
-      fechaFin?: string;
-      miembrosNombres?: string; 
-  }>();
-    
+  const { id } = useLocalSearchParams<{ id?: string }>();
+
+  const [data, setData] = useState<Grupo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      try {
+        if (!id) throw new Error("Falta el id del grupo");
+        setLoading(true);
+        setErr(null);
+
+        
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${id}`, {
+       
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json: Grupo = await res.json();
+        if (!cancel) setData(json);
+      } catch (e: any) {
+        if (!cancel) setErr(e.message ?? "Error desconocido");
+      } finally {
+        if (!cancel) setLoading(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator />
+          <Text style={{ color: "#e8eee9", marginTop: 8 }}>Cargando grupo…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (err || !data) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+        </Pressable>
+        <View style={{ padding: 16 }}>
+          <Text style={{ color: "#ff8a8a" }}>No se pudo cargar el grupo: {err ?? "Sin datos"}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // --- datos desde el backend ---
+  const nombreGrupo   = data.nombre ?? "Grupo";
+  const ubicacion     = data.ubicacion ?? "Sin ubicación";
+  const miembros      = data.miembros ?? [];
+  const miembrosCount = miembros.length;
+  const foto          = data.foto && data.foto.length > 0
+    ? data.foto
+    : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d";
+  const descripcion   = data.descripcion ?? "Descripción no disponible.";
+  const fechaInicio   = data.fechaInicio ?? "—";
+  const fechaFin      = data.fechaFin ?? "—";
 
   const handlePress = (funcionalidad: string) => {
     alert(`Ir a: ${funcionalidad}`);
   };
 
-  const handlePerfilMiembro = (nombre: string) => {
-    alert(`Ir al perfil de: ${nombre}`);
-  };
-
-
-    const nombreGrupo   = params.nombre ?? "Grupo";
-    const ubicacion     = params.ubicacion ?? "Sin ubicación";
-    const miembrosCount = params.miembrosCant ? Number(params.miembrosCant) : 0;
-    const foto          = params.foto && params.foto.length > 0
-                          ? params.foto
-                          : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d";
-    const descripcion   = params.descripcion ?? "Descripción no disponible.";
-    const fechaInicio   = params.fechaInicio ?? "—";
-    const fechaFin      = params.fechaFin ?? "—";
-  
-    let miembros: string[] = ["Ana"];
-    try {
-      if (params.miembrosNombres) {
-        const parsed = JSON.parse(String(params.miembrosNombres));
-        if (Array.isArray(parsed)) miembros = parsed as string[];
-      }
-    } catch {}
-
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-      <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-        <Ionicons name="chevron-back" size={22} color="#e8eee9" />
-      </Pressable>
+        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+        </Pressable>
+
         <View style={styles.portadaWrap}>
           <Image
             source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }}
             style={styles.portada}
           />
-          
           <View style={styles.avatarOverlay}>
-            <Image
-              source={{ uri: foto }}              
-              style={styles.avatar}
-            />
+            <Image source={{ uri: foto }} style={styles.avatar} />
           </View>
         </View>
 
@@ -77,60 +116,46 @@ export default function GrupoScreen() {
           <View style={styles.membersRow}>
             {miembros.map((m) => (
               <Pressable
-                key={m}
+                key={String(m.id ?? m.nombre)}
                 style={styles.memberButton}
                 onPress={() =>
                   router.push({
                     pathname: "/(stack)/friendProfile",
-                    params: {
-                      nombre: m,
-                      apellido: "",               
-                      telefono: "",               
-                      fechaNacimiento: "",        
-                      dni: "",                    
-                      apodo: "",                  
-                      avatarUri: "",
-                      
-                    },
+                    params: { nombre: m.nombre, apellido: "", telefono: "", fechaNacimiento: "", dni: "", apodo: "", avatarUri: "" },
                   })
                 }
               >
-                <Text style={styles.memberName}>{m}</Text>
+                <Text style={styles.memberName}>{m.nombre}</Text>
               </Pressable>
             ))}
           </View>
         </View>
 
         <View style={styles.buttonsRow}>
-            <Link href="/(stack)/expenses" asChild>
-              <Pressable              
-                key={"gastos"}
-                style={styles.funcButton}
-              >
-                <Text style={styles.funcButtonText}>Gastos</Text>
-              </Pressable>
-            </Link>
-          {[
-            "Tareas",
-            "Chat",
-            "Mapas",
-            "Documentos",
-            "Itinerario",
-          ].map((func) => (
-            <Pressable
-              key={func}
-              style={styles.funcButton}
-              onPress={() => handlePress(func)}
-            >
+          <Link href={{ pathname: "/(stack)/expenses", params: { grupoId: String(data.id) } }} asChild>
+            <Pressable key={"gastos"} style={styles.funcButton}>
+              <Text style={styles.funcButtonText}>Gastos</Text>
+            </Pressable>
+          </Link>
+
+          {["Tareas","Chat","Mapas","Documentos"].map((func) => (
+            <Pressable key={func} style={styles.funcButton} onPress={() => handlePress(func)}>
               <Text style={styles.funcButtonText}>{func}</Text>
             </Pressable>
           ))}
-          
+
+          <Link href={{ pathname: "/(stack)/itinerary", params: { grupoId: String(data.id) } }} asChild>
+            <Pressable key={"itinerario"} style={styles.funcButton}>
+              <Text style={styles.funcButtonText}>Itinerario</Text>
+            </Pressable>
+          </Link>
+
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#0F1310" },
