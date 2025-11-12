@@ -28,6 +28,18 @@ type Expense = {
   participants: string[];
   category?: string | null;
 };
+type Miembro = { id: string | number; nombre: string };
+
+type Grupo = {
+  id: string | number;
+  nombre: string;
+  ubicacion?: string;
+  descripcion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  foto?: string | null;
+  miembros?: Miembro[];
+};
 
 /* Colors + styles (mantengo los tuyos) */
 const C = {
@@ -193,15 +205,18 @@ function BalanceSummary({ balances, participantsById, onSettleDebt }: { balances
 /* Main component (mantengo modales y comportamiento) */
 export default function ExpensesScreen({ route }: any) {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  //const params = useLocalSearchParams();
   //console.log("params en ExpensesScreen:", params);
-  const { grupoId } = useLocalSearchParams<{ grupoId?: string }>();
-  const viajeId=grupoId ;;
+  const params = useLocalSearchParams<{ grupo?: string }>();
+  const { grupo } = params; 
+ 
 
   const [userId, setUserId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viajeData, setViajeData] = useState<Grupo | null>(null);
+  const viajeId = viajeData?.id ?? null;
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -219,21 +234,45 @@ export default function ExpensesScreen({ route }: any) {
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
-    console.log("ExpensesScreen useEffect() viajeId ->", viajeId);
     const init = async () => {
+      setLoading(true);
+
+      // Obtener userId
       const uid = await AsyncStorage.getItem("userId");
       setUserId(uid);
-      if (!viajeId) {
+
+      if (!grupo) {
         setLoading(false);
         return;
       }
-      await fetchTripData(viajeId);
+
+      let viajeId: number | null = null;
+
+      try {
+        const parsedGrupo = JSON.parse(grupo);
+        setViajeData(parsedGrupo);
+        viajeId = parsedGrupo.id;
+
+        // Inicializar participantes desde params
+        setParticipants(parsedGrupo.miembros.map((m) => ({
+          id: String(m.id),
+          name: m.nombre,
+        })));
+      } catch (e) {
+        console.warn("Error parsing grupo param:", e);
+      }
+
+      if (viajeId) {
+        await fetchTripData(viajeId);
+      }
+
       setLoading(false);
     };
-    init();
-  }, [viajeId]);
 
-  const fetchTripData = async (tripId: string) => {
+    init();
+  }, [grupo]);
+
+  const fetchTripData = async (tripId: number) => {
     try {
       setLoading(true);
       console.log("fetchTripData() -> viajeId:", tripId);
@@ -274,8 +313,6 @@ export default function ExpensesScreen({ route }: any) {
       setExpenses(gastosAdaptados);
       
 
-      
-
     } catch (error) {
       console.error("Error fetchTripData:", error);
       Alert.alert("Error", "No se pudieron cargar los datos del viaje.");
@@ -293,7 +330,6 @@ export default function ExpensesScreen({ route }: any) {
   }, [participants]);
 
   const participantsById = useMemo(() => Object.fromEntries(participants.map((p) => [p.id, p] as const)), [participants]);
-
   const totalExpenses = useMemo(() => expenses.reduce((acc, e) => acc + Number(e.amount), 0), [expenses]);
   const balances = useMemo(() => calculateBalances(expenses, participants, userId), [expenses, participants, userId]);
 
@@ -320,6 +356,7 @@ export default function ExpensesScreen({ route }: any) {
   };
 
   const onSaveExpense = async () => {
+     console.log("onSaveExpense llamado", { draftTitle, draftAmount, draftPayer, draftSelected });
     if (!draftTitle || !draftAmount || !draftPayer) {
       Alert.alert("Error", "Completá descripción, monto y pagador.");
       return;
@@ -333,6 +370,7 @@ export default function ExpensesScreen({ route }: any) {
         viajeId: Number(viajeId),
         participantes: draftSelected.map(id => Number(id)), 
       };
+      console.log("Gasto a enviar:", payload);
 
       const url = editExpenseId ? `${API_URL}/gastos/${editExpenseId}` : `${API_URL}/gastos`;
       const method = editExpenseId ? "PUT" : "POST";
@@ -350,6 +388,7 @@ export default function ExpensesScreen({ route }: any) {
 
       await fetchTripData(viajeId);
       closeCreateModal();
+
     } catch (error) {
       console.error("Error onSaveExpense:", error);
       Alert.alert("Error", "No se pudo guardar el gasto.");
@@ -377,8 +416,6 @@ export default function ExpensesScreen({ route }: any) {
   };
 
   const onConfirmSettle = async () => {
-    // Aquí llamamos a endpoint /settlements si lo implementás.
-    // Si no, podés omitir y usar lógica local o implementar endpoint en backend.
     Alert.alert("Saldar", "Esta acción requiere endpoint /settlements en backend.");
   };
 
@@ -406,15 +443,15 @@ export default function ExpensesScreen({ route }: any) {
             <Ionicons name="chevron-forward" size={18} color={C.muted} />
           </View>
           <View style={{ height: 8 }} />
-          <Text style={styles.muted}>Ubicación: (desde datos del viaje)</Text>
-          <Text style={styles.muted}>Fechas: (desde datos del viaje)</Text>
-          <Text style={styles.muted}>Participantes: {participants.length}</Text>
+          <Text style={styles.muted}>Ubicación: {viajeData?.ubicacion ?? "—"}</Text>
+          <Text style={styles.muted}>Fechas: {viajeData?.fechaInicio ?? "—"} - {viajeData?.fechaFin ?? "—"}</Text>
+          <Text style={styles.muted}>Participantes: {viajeData?.miembros?.length ?? 0}</Text>
         </Pressable>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Resumen</Text>
           <View style={{ height: 8 }} />
-          <Text style={styles.muted}>Participantes: {participants.length}</Text>
+          <Text style={styles.muted}>Participantes: {viajeData?.miembros?.length ?? 0}</Text>
           <Text style={styles.muted}>
             Total gastado: <Text style={{ color: C.text, fontWeight: "bold" }}> ${totalExpenses.toLocaleString("es-AR")} </Text>
           </Text>
@@ -423,7 +460,16 @@ export default function ExpensesScreen({ route }: any) {
         <BalanceSummary balances={balances} participantsById={participantsById} onSettleDebt={() => setIsSettleModalOpen(true)} />
 
         <View style={{ width: "100%", alignItems: "center", marginTop: 12 }}>
-          <Pressable style={styles.primaryBtn} onPress={() => { setIsEditing(false); setIsCreateModalOpen(true); }}>
+          <Pressable style={styles.primaryBtn} onPress={() => { 
+            setIsEditing(false); 
+            setIsCreateModalOpen(true);
+            setDraftTitle("");
+            setDraftAmount("");
+            setDraftPayer(participants[0]?.id ?? ""); // primer participante como pagador
+            setDraftSelected(participants.map((p) => p.id)); // todos seleccionados
+            setEditExpenseId(null);
+            setIsCreateModalOpen(true);
+            }}>
             <Text style={styles.primaryBtnText}><Ionicons name="add" size={16} color="#0F1310" /> Registrar nuevo gasto</Text>
           </Pressable>
         </View>
@@ -433,7 +479,7 @@ export default function ExpensesScreen({ route }: any) {
         <FlatList
           data={expenses}
           keyExtractor={(item) => item.id}
-          scrollEnabled={false}
+          //scrollEnabled={true}
           contentContainerStyle={{ paddingHorizontal: 16 }}
           renderItem={({ item }) => (
             <View>

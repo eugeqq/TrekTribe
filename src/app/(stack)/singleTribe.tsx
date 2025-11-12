@@ -221,7 +221,7 @@ export default function GrupoScreen() {
         </View>
 
         <View style={styles.buttonsRow}>
-          <Link href={{ pathname: "/(stack)/expenses", params: { grupoId: String(data.id) } }} asChild>
+          <Link href={{ pathname: "/(stack)/expenses", params: { grupo: JSON.stringify(data) }, }} asChild>
             <Pressable key={"gastos"} style={styles.funcButton}>
               <Text style={styles.funcButtonText}>Gastos</Text>
             </Pressable>
