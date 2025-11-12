@@ -11,13 +11,16 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { toImageUrl } from "../../lib/url";
 
 type Grupo = {
   id: number;                 
   nombre: string;
   ubicacion: string;
   miembrosCant: number;
-  foto?: string | null;
+  foto?: string | null;        // compat viejo
+  imagen?: string | null;      // ruta relativa (/uploads/..)
+  imagenUrl?: string | null;   // absoluta (http://.../uploads/..)
   descripcion?: string;
   fechaInicio?: string;
   fechaFin?: string;
@@ -59,7 +62,9 @@ export default function GruposScreen() {
           nombre: v.nombre ?? "Sin nombre",
           ubicacion: v.ubicacion ?? "—",
           miembrosCant: Array.isArray(v.miembros) ? v.miembros.length : v.miembrosCant ?? 0,
-          foto: v.foto ?? v.imagen ?? null,
+          foto: v.foto ?? null,              // legacy
+          imagen: v.imagen ?? null,          // relativa
+          imagenUrl: v.imagenUrl ?? null,    // absoluta
           descripcion: v.descripcion ?? "",
           fechaInicio: v.fechaInicio ?? null,
           fechaFin: v.fechaFin ?? null,
@@ -126,9 +131,8 @@ export default function GruposScreen() {
             <Image
               source={{
                 uri:
-                  grupo.foto && grupo.foto.length > 0
-                    ? grupo.foto
-                    : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d",
+                 toImageUrl(grupo.imagenUrl || grupo.imagen || grupo.foto) ||
+                 "",
               }}
               style={styles.grupoFoto}
               resizeMode="cover"

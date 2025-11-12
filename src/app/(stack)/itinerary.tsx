@@ -3,20 +3,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Grupo = {
@@ -285,11 +285,12 @@ export default function ItineraryScreen() {
     if (!API || !viajeId) return;
     (async () => {
       try {
-        const res = await fetch(`${API}/viajes/${viajeId}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(`${API}/viajes/detalle/${viajeId}`);
         const v = await res.json();
-        // ajustá los nombres según tu API: nombre vs titulo, etc.
-        setGrupo({ id: v.id, nombre: v.nombre ?? `#${viajeId}` });
+        setGrupo({
+          id: v.id ?? Number(viajeId),
+          nombre: v.nombre ?? (nombre ?? `#${viajeId}`)
+        });
       } catch (e) {
         console.error(e);
         setGrupo(null);

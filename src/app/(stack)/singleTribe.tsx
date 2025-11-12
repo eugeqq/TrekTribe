@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { toImageUrl } from "../../lib/url";
 
 type Miembro = { id: string | number; nombre: string };
 type Grupo = {
@@ -11,7 +12,9 @@ type Grupo = {
   descripcion?: string;
   fechaInicio?: string;
   fechaFin?: string;
-  foto?: string | null;
+  foto?: string | null;        // legacy
+  imagen?: string | null;      // relativa
+  imagenUrl?: string | null;   // absoluta
   miembros?: Miembro[];
 };
 
@@ -53,7 +56,9 @@ export default function GrupoScreen() {
               descripcion: parsed.descripcion,
               fechaInicio: parsed.fechaInicio,
               fechaFin: parsed.fechaFin,
-              foto: parsed.imagen ?? parsed.foto ?? null,
+              imagenUrl: parsed.imagenUrl ?? null,
+              imagen: parsed.imagen ?? null,
+              foto: parsed.foto ?? null,
               miembros,
             };
             if (!cancel) setData(normalized);
@@ -120,7 +125,9 @@ export default function GrupoScreen() {
           descripcion: jsonData.descripcion,
           fechaInicio: jsonData.fechaInicio,
           fechaFin: jsonData.fechaFin,
-          foto: jsonData.imagen ?? jsonData.foto ?? null,
+          imagenUrl: jsonData.imagenUrl ?? null,
+          imagen: jsonData.imagen ?? null,
+          foto: jsonData.foto ?? null,
           miembros,
         };
 
@@ -165,9 +172,12 @@ export default function GrupoScreen() {
   const ubicacion     = data.ubicacion ?? "Sin ubicación";
   const miembros      = data.miembros ?? [];
   const miembrosCount = miembros.length;
-  const foto          = data.foto && data.foto.length > 0
-    ? data.foto
-    : "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d";
+  const DEFAULT_IMG =
+  "";
+
+// forzamos a string para que <Image source={{uri}}/> no se queje
+  const foto: string =
+    toImageUrl(data.imagenUrl ?? data.imagen ?? data.foto) ?? DEFAULT_IMG;
   const descripcion   = data.descripcion ?? "Descripción no disponible.";
   const fechaInicio   = data.fechaInicio ?? "—";
   const fechaFin      = data.fechaFin ?? "—";

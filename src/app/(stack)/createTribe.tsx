@@ -81,11 +81,15 @@ export default function CrearGrupoScreen() {
 
       if (imagenUri) {
         formData.append("imagen", {
-          uri: imagenUri,
-          name: "tribe.jpg",
-          type: "image/jpeg",
+          uri: imagenUri.startsWith("file://") ? imagenUri : `file://${imagenUri}`,
+          name: "tribe.jpg",            // cualquier nombre con extensión
+          type: "image/jpeg",           // MIME correcto
         } as any);
       }
+
+      console.log("POST /tribes ->", process.env.EXPO_PUBLIC_API_URL);
+      console.log("imagenUri:", imagenUri);
+      
 
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tribes`, {
         method: "POST",
