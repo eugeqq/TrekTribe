@@ -52,56 +52,31 @@ const C = {
   warning: "#d9534f",
 };
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  backBtn: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    zIndex: 20,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1a1f1b",
-    borderWidth: 1,
-    borderColor: "#2a322b",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  portadaWrap: { width: "100%", position: "relative", marginBottom: 60 },
-  portada: { width: "100%", height: 160, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
-  avatarOverlay: { position: "absolute", bottom: -40, left: "50%", marginLeft: -40, overflow: "hidden" },
-  avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.card, borderWidth: 3, borderColor: C.bg, alignItems: "center", justifyContent: "center" },
-  title: { marginTop: 12, fontSize: 22, fontWeight: "700", color: C.text, textAlign: "center" },
-  card: { width: "90%", backgroundColor: C.card, borderRadius: 16, padding: 16, marginTop: 12, alignSelf: "center", borderWidth: 1, borderColor: C.border },
-  cardTitle: { color: C.text, fontSize: 16, fontWeight: "700" },
-  muted: { color: C.muted, fontSize: 14 },
-  sectionTitle: { color: C.text, fontWeight: "700", fontSize: 16, marginTop: 18, marginBottom: 8, paddingHorizontal: 16 },
-  expenseCard: { backgroundColor: C.card, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.border },
-  expenseHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 },
-  expenseTitle: { fontSize: 16, fontWeight: "700", color: C.text },
-  dateText: { fontSize: 12, color: C.muted },
-  amount: { fontSize: 20, fontWeight: "800", color: C.accent },
-  label: { fontSize: 13, color: C.text, fontWeight: "700" },
-  input: { borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: Platform.select({ ios: 10, android: 8 }), fontSize: 14, backgroundColor: "#0f1511", color: C.text, marginBottom: 10 },
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "#2a322b", borderWidth: 1, borderColor: C.border },
-  pillActive: { backgroundColor: "#233027", borderColor: C.accent },
-  pillText: { fontSize: 13, color: C.text },
-  primaryBtn: { backgroundColor: C.accent, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
-  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", padding: 16, justifyContent: "flex-end" },
-  modalCard: { maxHeight: "88%", backgroundColor: C.card, borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: C.border },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: C.text },
-  topActionButtonContainer: { width: "90%", alignSelf: "center", marginTop: 16, marginBottom: 8 },
-  mutedCenter: { color: C.muted, textAlign: "center", marginTop: 20 },
-});
+
+
+const toDDMMYYYY = (val?: string | number | Date | null) => {
+  if (!val) return "—";
+
+  // Si ya viene como dd/mm/aaaa, lo dejamos
+  if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+    return val;
+  }
+
+  // Caso ISO "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ssZ": evitar líos de zona horaria
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+    const [y, m, rest] = val.split("-");
+    const d = rest.slice(0, 2); // toma los 2 primeros chars del día
+    return `${d}/${m}/${y}`;
+  }
+
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "—";
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
 
 /* Helper: calcula balances — ahora recibe userId dinámico */
 function calculateBalances(expenses: Expense[], allParticipants: Participant[], userId: string | null): Record<string, number> {
@@ -396,12 +371,7 @@ export default function ExpensesScreen({ route }: any) {
   };
 
   const onDeleteExpense = async (expenseId: string) => {
-    Alert.alert("Confirmar", "¿Eliminar gasto?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
+   
           try {
             const res = await fetch(`${API_URL}/gastos/${expenseId}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Error al eliminar");
@@ -410,9 +380,8 @@ export default function ExpensesScreen({ route }: any) {
             console.error("Error borrar gasto:", err);
             Alert.alert("Error", "No se pudo eliminar el gasto.");
           }
-        },
-      },
-    ]);
+        
+  
   };
 
   const onConfirmSettle = async () => {
@@ -444,7 +413,7 @@ export default function ExpensesScreen({ route }: any) {
           </View>
           <View style={{ height: 8 }} />
           <Text style={styles.muted}>Ubicación: {viajeData?.ubicacion ?? "—"}</Text>
-          <Text style={styles.muted}>Fechas: {viajeData?.fechaInicio ?? "—"} - {viajeData?.fechaFin ?? "—"}</Text>
+          <Text style={styles.muted}>Fechas: {toDDMMYYYY(viajeData?.fechaInicio) ?? "—"} - {toDDMMYYYY(viajeData?.fechaFin) ?? "—"}</Text>
           <Text style={styles.muted}>Participantes: {viajeData?.miembros?.length ?? 0}</Text>
         </Pressable>
 
@@ -580,3 +549,54 @@ export default function ExpensesScreen({ route }: any) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
+  backBtn: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1a1f1b",
+    borderWidth: 1,
+    borderColor: "#2a322b",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  portadaWrap: { width: "100%", position: "relative", marginBottom: 60 },
+  portada: { width: "100%", height: 160, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  avatarOverlay: { position: "absolute", bottom: -40, left: "50%", marginLeft: -40, overflow: "hidden" },
+  avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.card, borderWidth: 3, borderColor: C.bg, alignItems: "center", justifyContent: "center" },
+  title: { marginTop: 12, fontSize: 22, fontWeight: "700", color: C.text, textAlign: "center" },
+  card: { width: "90%", backgroundColor: C.card, borderRadius: 16, padding: 16, marginTop: 12, alignSelf: "center", borderWidth: 1, borderColor: C.border },
+  cardTitle: { color: C.text, fontSize: 16, fontWeight: "700" },
+  muted: { color: C.muted, fontSize: 14 },
+  sectionTitle: { color: C.text, fontWeight: "700", fontSize: 16, marginTop: 18, marginBottom: 8, paddingHorizontal: 16 },
+  expenseCard: { backgroundColor: C.card, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: C.border },
+  expenseHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 },
+  expenseTitle: { fontSize: 16, fontWeight: "700", color: C.text },
+  dateText: { fontSize: 12, color: C.muted },
+  amount: { fontSize: 20, fontWeight: "800", color: C.accent },
+  label: { fontSize: 13, color: C.text, fontWeight: "700" },
+  input: { borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: Platform.select({ ios: 10, android: 8 }), fontSize: 14, backgroundColor: "#0f1511", color: C.text, marginBottom: 10 },
+  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "#2a322b", borderWidth: 1, borderColor: C.border },
+  pillActive: { backgroundColor: "#233027", borderColor: C.accent },
+  pillText: { fontSize: 13, color: C.text },
+  primaryBtn: { backgroundColor: C.accent, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", padding: 16, justifyContent: "flex-end" },
+  modalCard: { maxHeight: "88%", backgroundColor: C.card, borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: C.border },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: C.text },
+  topActionButtonContainer: { width: "90%", alignSelf: "center", marginTop: 16, marginBottom: 8 },
+  mutedCenter: { color: C.muted, textAlign: "center", marginTop: 20 },
+});

@@ -18,6 +18,32 @@ type Grupo = {
   miembros?: Miembro[];
 };
 
+
+const toDDMMYYYY = (val?: string | number | Date | null) => {
+  if (!val) return "—";
+
+  // Si ya viene como dd/mm/aaaa, lo dejamos
+  if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+    return val;
+  }
+
+  // Caso ISO "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ssZ": evitar líos de zona horaria
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+    const [y, m, rest] = val.split("-");
+    const d = rest.slice(0, 2); // toma los 2 primeros chars del día
+    return `${d}/${m}/${y}`;
+  }
+
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "—";
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+
 export default function GrupoScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; grupo?: string }>();
@@ -179,8 +205,8 @@ export default function GrupoScreen() {
   const foto: string =
     toImageUrl(data.imagenUrl ?? data.imagen ?? data.foto) ?? DEFAULT_IMG;
   const descripcion   = data.descripcion ?? "Descripción no disponible.";
-  const fechaInicio   = data.fechaInicio ?? "—";
-  const fechaFin      = data.fechaFin ?? "—";
+  const fechaInicio = toDDMMYYYY(data.fechaInicio);
+  const fechaFin    = toDDMMYYYY(data.fechaFin);
 
   const handlePress = (funcionalidad: string) => {
     alert(`Ir a: ${funcionalidad}`);
@@ -188,10 +214,12 @@ export default function GrupoScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={22} color="#e8eee9" />
         </Pressable>
+
+      <ScrollView contentContainerStyle={styles.container}>
+
 
         <View style={styles.portadaWrap}>
           <Image
@@ -238,7 +266,7 @@ export default function GrupoScreen() {
           </Link>
 
     
-          <Link href={{ pathname: "/(stack)/toDos", params: { grupoId: String(data.id) } }} asChild>
+          <Link href={{ pathname: "/(stack)/toDos", params: { groupId: String(data.id) } }} asChild>
             <Pressable key={"tareas"} style={styles.funcButton}>
               <Text style={styles.funcButtonText}>Tareas</Text>
             </Pressable>

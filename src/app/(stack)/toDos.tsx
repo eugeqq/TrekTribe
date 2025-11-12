@@ -1,489 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
-
-
-type Participant = { id: string; name: string; avatar?: string };
-
-type Task = {
-  id: string;
-  title: string;
-  assignedToId: string; 
-  isCompleted: boolean;
-  dueDate: string; 
-  category?: string;
-};
-
-
-const MOCK_PARTICIPANTS: Participant[] = [
-  { id: "u1", name: "Ana" },
-  { id: "u2", name: "Bruno" },
-  { id: "u3", name: "Carla" },
-  { id: "u4", name: "Diego" },
-];
-
-const MOCK_TASKS: Task[] = [
-  {
-    id: "t1",
-    title: "Comprar pasajes de tren a Venecia",
-    assignedToId: "u1",
-    isCompleted: false,
-    dueDate: "2025-11-20",
-    category: "Reserva",
-  },
-  {
-    id: "t2",
-    title: "Buscar un buen restaurante para la cena",
-    assignedToId: "u3",
-    isCompleted: true,
-    dueDate: "2025-10-25",
-    category: "Comida",
-  },
-  {
-    id: "t3",
-    title: "Investigar tours en el Coliseo",
-    assignedToId: "u2",
-    isCompleted: false,
-    dueDate: "2025-11-05",
-    category: "Actividad",
-  },
-  {
-    id: "t4",
-    title: "Organizar transporte al aeropuerto",
-    assignedToId: "u4",
-    isCompleted: false,
-    dueDate: "2025-12-01",
-    category: "Transporte",
-  },
-];
-
-
-function Chip({ label, color }: { label: string; color?: string }) {
-  return (
-    <View style={[styles.chip, color ? { backgroundColor: color + '30', borderColor: color } : {}]}>
-      <Text style={[styles.chipText, color ? { color: color } : {}]}>{label}</Text>
-    </View>
-  );
-}
-
-function LabeledInput(props: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
-  keyboardType?: "default" | "numeric";
-}) {
-  return (
-    <SafeAreaView>
-        <View style={{ gap: 6 }}>
-        <Text style={styles.label}>{props.label}</Text>
-        <TextInput
-            value={props.value}
-            onChangeText={props.onChangeText}
-            placeholder={props.placeholder}
-            placeholderTextColor="#6b746e"
-            keyboardType={props.keyboardType}
-            style={styles.input}
-        />
-        </View>
-    </SafeAreaView>
-  );
-}
-
-
-export default function TasksScreen() {
-  const router = useRouter();
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [draftDueDate, setDraftDueDate] = useState("2025-12-31"); 
-  const [draftAssignedTo, setDraftAssignedTo] = useState(MOCK_PARTICIPANTS[0].id);
-  const [draftCategory, setDraftCategory] = useState("General");
-  
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  
-  const [editTitle, setEditTitle] = useState("");
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editAssignedTo, setEditAssignedTo] = useState("");
-  const [editCategory, setEditCategory] = useState("");
-  const [editIsCompleted, setEditIsCompleted] = useState(false);
-
-  const tasks = MOCK_TASKS;
-  const participantsById = useMemo(
-    () => Object.fromEntries(MOCK_PARTICIPANTS.map((p) => [p.id, p] as const)),
-    []
-  );
-
-  const toggleTaskCompletion = (taskId: string) => {
-    console.log(`Toggling completion for task ${taskId}`);
-  };
-
-  const onEditTask = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-        setEditingTask(task);
-        setEditTitle(task.title);
-        setEditDueDate(task.dueDate);
-        setEditAssignedTo(task.assignedToId);
-        setEditCategory(task.category || "General");
-        setEditIsCompleted(task.isCompleted);
-        
-        setIsEditModalOpen(true);
-    }
-  };
-  
-  const onCloseEditModal = () => {
-      setIsEditModalOpen(false);
-      setEditingTask(null);
-  };
-  
-  const onSaveChanges = () => {
-      if (!editingTask) return;
-      console.log("Guardando cambios para tarea:", editingTask.id);
-      console.log("Nuevos valores:", {
-          title: editTitle,
-          dueDate: editDueDate,
-          assignedTo: editAssignedTo,
-          category: editCategory,
-          isCompleted: editIsCompleted,
-      });
-      onCloseEditModal();
-  };
-  
-  const onDeleteTask = () => {
-      if (!editingTask) return;
-      console.log("Eliminando tarea:", editingTask.id);
-      onCloseEditModal();
-  };
-  
-  const onToggleCompletionInEdit = () => {
-      setEditIsCompleted(prev => !prev);
-      console.log("Cambiando estado de completada en el modal de edición.");
-  };
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-        <Ionicons name="chevron-back" size={22} color="#e8eee9" />
-      </Pressable>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={styles.portadaWrap}>
-          <Image
-            source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }}
-            style={styles.portada}
-          />
-          <View style={styles.avatarOverlay}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="clipboard-outline" size={30} color="#9ec39f" />
-            </View>
-          </View>
-        </View>
-
-        <Text style={styles.title}>Tareas del grupo</Text>
-
-        <Pressable style={[styles.card, { marginTop: 16 }]} onPress={() => console.log('Ir a detalles del viaje')}>
-          <View style={styles.bannerHeader}>
-            <Text style={styles.cardTitle}> Informacion general del Viaje</Text>
-            <Ionicons name="chevron-forward" size={18} color={C.muted} />
-          </View>
-          <View style={{ height: 8 }} />
-          <Text style={styles.muted}>Roma, Italia</Text>
-          <Text style={styles.muted}>1 Diciembre 2025 - 8 Diciembre 2025</Text>
-          <Text style={styles.muted}>4 participantes</Text>
-        </Pressable>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Estado</Text>
-          <View style={{ height: 8 }} />
-          <Text style={styles.muted}>
-            Tareas totales: {tasks.length}
-          </Text>
-          <Text style={styles.muted}>
-            Pendientes: {tasks.filter(t => !t.isCompleted).length}
-          </Text>
-          <Text style={styles.muted}>
-            Completadas: {tasks.filter(t => t.isCompleted).length}
-          </Text>
-        </View>
-        
-        <View style={styles.topActionButtonContainer}>
-            <Pressable style={styles.primaryBtn} onPress={() => setIsCreateModalOpen(true)}>
-                <Text style={styles.primaryBtnText}>
-                    <Ionicons name="add" size={16} color="#0F1310" /> Nueva Tarea
-                </Text>
-            </Pressable>
-        </View>
-
-        <Text style={styles.sectionTitle}>Pendientes</Text>
-        <FlatList
-          data={tasks.filter(t => !t.isCompleted)}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => {
-            const assignee = participantsById[item.assignedToId]?.name ?? "Sin asignar";
-            return (
-              <TaskCard
-                task={item}
-                assigneeName={assignee}
-                onToggle={toggleTaskCompletion}
-                onEdit={onEditTask} 
-                isCompleted={false}
-              />
-            );
-          }}
-          ListFooterComponent={<View style={{ height: 8 }} />}
-          ListEmptyComponent={<Text style={[styles.muted, { textAlign: 'center', margin: 20 }]}>¡No hay tareas pendientes! 🎉</Text>}
-        />
-        
-        <Text style={styles.sectionTitle}>Completadas</Text>
-        <FlatList
-          data={tasks.filter(t => t.isCompleted)}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => {
-            const assignee = participantsById[item.assignedToId]?.name ?? "Sin asignar";
-            return (
-              <TaskCard
-                task={item}
-                assigneeName={assignee}
-                onToggle={toggleTaskCompletion}
-                onEdit={onEditTask} 
-                isCompleted={true}
-              />
-            );
-          }}
-          ListFooterComponent={<View style={{ height: 8 }} />}
-          ListEmptyComponent={null}
-        />
-      </ScrollView>
-
-      <Modal
-        visible={isCreateModalOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setIsCreateModalOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Crear Tarea</Text>
-              <Pressable onPress={() => setIsCreateModalOpen(false)}>
-                <Ionicons name="close" size={22} color="#e8eee9" />
-              </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
-              <LabeledInput
-                label="Título de la Tarea"
-                placeholder="Ej: Reservar hotel en Roma"
-                value={draftTitle}
-                onChangeText={setDraftTitle}
-              />
-
-              <LabeledInput
-                label="Fecha Límite (AAAA-MM-DD)"
-                placeholder="2025-12-31"
-                value={draftDueDate}
-                onChangeText={setDraftDueDate}
-              />
-
-              <Text style={styles.label}>Categoría</Text>
-              <View style={styles.pillRow}>
-                {["Reserva", "Comida", "Actividad", "Transporte", "General"].map((cat) => (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setDraftCategory(cat)}
-                    style={[styles.pill, draftCategory === cat && styles.pillActive]}
-                  >
-                    <Text
-                      style={[styles.pillText, draftCategory === cat && styles.pillTextActive]}
-                    >
-                      {cat}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={styles.label}>Asignar a:</Text>
-              <View style={styles.pillRow}>
-                {MOCK_PARTICIPANTS.map((p) => (
-                  <Pressable
-                    key={p.id}
-                    onPress={() => setDraftAssignedTo(p.id)}
-                    style={[styles.pill, draftAssignedTo === p.id && styles.pillActive]}
-                  >
-                    <Text
-                      style={[styles.pillText, draftAssignedTo === p.id && styles.pillTextActive]}
-                    >
-                      {p.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <View style={{ height: 12 }} />
-              <Pressable style={[styles.primaryBtn, { opacity: 0.6 }]} disabled>
-                <Text style={styles.primaryBtnText}>Guardar Tarea (próximamente)</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-      
-      <Modal
-        visible={isEditModalOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={onCloseEditModal}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Editar Tarea</Text>
-              <Pressable onPress={onCloseEditModal}>
-                <Ionicons name="close" size={22} color="#e8eee9" />
-              </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
-              
-              <Pressable style={styles.checkRow} onPress={onToggleCompletionInEdit}>
-                <Ionicons
-                    name={editIsCompleted ? "checkbox" : "square-outline"}
-                    size={20}
-                    color={editIsCompleted ? C.accent : C.muted}
-                />
-                <Text style={styles.checkText}>
-                    {editIsCompleted ? "Marcar como Pendiente" : "Marcar como Completada"}
-                </Text>
-              </Pressable>
-              
-              <LabeledInput
-                label="Título"
-                value={editTitle}
-                onChangeText={setEditTitle}
-              />
-              <LabeledInput
-                label="Fecha Límite (AAAA-MM-DD)"
-                value={editDueDate}
-                onChangeText={setEditDueDate}
-              />
-
-              <Text style={styles.label}>Categoría</Text>
-              <View style={styles.pillRow}>
-                {["Reserva", "Comida", "Actividad", "Transporte", "General"].map((cat) => (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setEditCategory(cat)}
-                    style={[styles.pill, editCategory === cat && styles.pillActive]}
-                  >
-                    <Text
-                      style={[styles.pillText, editCategory === cat && styles.pillTextActive]}
-                    >
-                      {cat}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={styles.label}>Asignar a:</Text>
-              <View style={styles.pillRow}>
-                {MOCK_PARTICIPANTS.map((p) => (
-                  <Pressable
-                    key={p.id}
-                    onPress={() => setEditAssignedTo(p.id)}
-                    style={[styles.pill, editAssignedTo === p.id && styles.pillActive]}
-                  >
-                    <Text
-                      style={[styles.pillText, editAssignedTo === p.id && styles.pillTextActive]}
-                    >
-                      {p.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <View style={{ height: 12 }} />
-              
-              <Pressable style={styles.primaryBtn} onPress={onSaveChanges}>
-                <Text style={styles.primaryBtnText}>Guardar Cambios</Text>
-              </Pressable>
-              
-              <Pressable style={[styles.primaryBtn, styles.deleteBtn]} onPress={onDeleteTask}>
-                <Text style={styles.deleteBtnText}><Ionicons name="trash-outline" size={16} color="#f06292" /> Eliminar Tarea</Text>
-              </Pressable>
-
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
-  );
-}
-
-
-
-function TaskCard({ task, assigneeName, onToggle, onEdit, isCompleted }: { task: Task, assigneeName: string, onToggle: (id: string) => void, onEdit: (id: string) => void, isCompleted: boolean }) {
-    const cardStyle = isCompleted ? styles.taskCardCompleted : styles.taskCard;
-    const titleStyle = isCompleted ? styles.taskTitleCompleted : styles.taskTitle;
-    const iconName = isCompleted ? "checkmark-circle-sharp" : "ellipse-outline";
-    const iconColor = isCompleted ? C.accent : C.muted;
-    const today = new Date().toISOString().split('T')[0];
-    const isOverdue = !isCompleted && task.dueDate < today;
-
-    return (
-        <View style={[cardStyle, isOverdue && styles.taskCardOverdue]}>
-            <Pressable style={styles.taskToggleArea} onPress={() => onToggle(task.id)}>
-                <Ionicons name={iconName} size={20} color={iconColor} />
-            </Pressable>
-            <View style={styles.taskContent}> 
-                <View style={styles.taskHeader}>
-                    <Text style={titleStyle}>{task.title}</Text>
-                    <Pressable onPress={() => onEdit(task.id)} style={styles.editButton}>
-                        <Ionicons name="pencil-outline" size={16} color={C.muted} />
-                    </Pressable>
-                </View>
-
-                <View style={styles.row}>
-                    <Ionicons name="person-circle-outline" size={16} color={C.muted} />
-                    <Text style={styles.rowText}>Asignada a: {assigneeName}</Text>
-                </View>
-
-                <View style={styles.row}>
-                    <Ionicons name="calendar-outline" size={16} color={isOverdue ? '#f06292' : C.muted} />
-                    <Text style={[styles.rowText, isOverdue && {color: '#f06292', fontWeight: 'bold'}]}>
-                        Límite: {task.dueDate} {isOverdue && '(¡Vencida!)'}
-                    </Text>
-                </View>
-
-                {task.category ? (
-                    <View style={styles.chips}>
-                        <Chip label={task.category} color={C.accent} />
-                    </View>
-                ) : null}
-            </View>
-        </View>
-    );
-}
-
-
 
 const C = {
   bg: "#0F1310",
@@ -491,180 +25,583 @@ const C = {
   border: "#2a322b",
   text: "#e8eee9",
   muted: "#9aa49d",
-  accent: "#9ec39f", 
-  delete: "#f06292", 
+  accent: "#9ec39f",
+  delete: "#f06292",
 };
+
+type Tarea = {
+  id: string;
+  titulo: string;
+  descripcion?: string;
+  estado: "pendiente" | "completada";
+  responsableId?: number | null;
+  responsable?: { nombre: string; apellido: string } | null;
+};
+
+type Participante = {
+  id: string;
+  name: string;
+  avatar: string | null;
+};
+
+type Viaje = {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  ubicacion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  imagen?: string;
+  miembrosCant?: number;
+};
+
+function LabeledInput(props: {
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+}) {
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={styles.label}>{props.label}</Text>
+      <TextInput
+        value={props.value}
+        onChangeText={props.onChangeText}
+        placeholder={props.placeholder}
+        placeholderTextColor="#6b746e"
+        style={[
+          styles.input,
+          props.multiline && { height: 90, textAlignVertical: "top" },
+        ]}
+        multiline={props.multiline}
+      />
+    </View>
+  );
+}
+
+async function safeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {};
+  }
+}
+
+export default function ToDosScreen() {
+  const { groupId } = useLocalSearchParams();
+  const router = useRouter();
+  // Asegúrate de que esta variable de entorno esté definida en tu proyecto Expo
+  const API = process.env.EXPO_PUBLIC_API_URL; 
+
+  const [viaje, setViaje] = useState<Viaje | null>(null);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [selected, setSelected] = useState<Tarea | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+
+  const fetchViaje = useCallback(async () => {
+    if (!API || !groupId) return;
+    try {
+      const res = await fetch(`${API}/viajes/detalle/${groupId}`);
+      const data = await safeJson(res);
+      setViaje(data);
+    } catch (e) {
+      console.error("Error al cargar viaje:", e);
+    }
+  }, [API, groupId]);
+
+  const fetchTareas = useCallback(async () => {
+    if (!API || !groupId) return;
+    try {
+      const res = await fetch(`${API}/viajes/${groupId}/tareas`);
+      const data = await safeJson(res);
+      const rows: Tarea[] = Array.isArray(data)
+        ? data.map((t: any) => ({
+            id: String(t.id),
+            titulo: t.titulo,
+            descripcion: t.descripcion ?? "",
+            estado: t.estado ?? "pendiente",
+            responsableId: t.responsableId,
+            responsable: t.responsable,
+          }))
+        : [];
+      rows.sort((a, b) => {
+        if (a.estado === "pendiente" && b.estado === "completada") return -1;
+        if (a.estado === "completada" && b.estado === "pendiente") return 1;
+        return a.titulo.localeCompare(b.titulo);
+      });
+      setTareas(rows);
+    } catch (e) {
+      console.error("Error al cargar tareas:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [API, groupId]);
+
+  const fetchParticipantes = useCallback(async () => {
+    if (!API || !groupId) return;
+    try {
+      const res = await fetch(`${API}/viajes/${groupId}/participantes`);
+      const data = await safeJson(res);
+      setParticipantes(data);
+    } catch (e) {
+      console.error("Error al cargar participantes:", e);
+    }
+  }, [API, groupId]);
+
+  useEffect(() => {
+    if (!groupId) {
+      setLoading(false);
+      return;
+    }
+    fetchViaje();
+    fetchTareas();
+    fetchParticipantes();
+  }, [fetchViaje, fetchTareas, fetchParticipantes, groupId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchViaje(), fetchTareas(), fetchParticipantes()]);
+    setRefreshing(false);
+  }, [fetchViaje, fetchTareas, fetchParticipantes]);
+
+  // ------- MODAL CONTROL -------
+  const openCreate = () => {
+    setSelected({
+      id: "new",
+      titulo: "",
+      descripcion: "",
+      estado: "pendiente",
+      responsableId: undefined,
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (t: Tarea) => {
+    setSelected(t);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelected(null);
+    setIsModalOpen(false);
+  };
+
+
+  const onSave = async () => {
+    console.log("API:", API);
+    console.log("groupId:", groupId);
+    console.log("selected:", selected);
+    if (!API || !groupId || !selected) return;
+
+    if (!selected.titulo.trim()) {
+      Alert.alert("Título requerido", "Por favor, ingresa un título para la tarea.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const payload = {
+        titulo: selected.titulo.trim(),
+        descripcion: selected.descripcion?.trim() ?? "",
+        estado: selected.estado,
+        responsableId: selected.responsableId ?? null,
+      };
+
+      const isNew = selected.id === "new";
+      const url = isNew
+        ? `${API}/viajes/${groupId}/tareas`
+        : `${API}/tareas/${selected.id}`;
+      const method = isNew ? "POST" : "PUT";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Error al guardar tarea:", text);
+        Alert.alert("Error", "No se pudo guardar la tarea.");
+        return;
+      }
+
+      await fetchTareas();
+      closeModal();
+      
+      Alert.alert(
+        isNew ? "¡Tarea creada!" : "¡Tarea actualizada!",
+        isNew ? "La nueva tarea ha sido agregada con éxito." : "Los cambios han sido guardados."
+      );
+      
+    } catch (e) {
+      console.error("Error al guardar:", e);
+      Alert.alert("Error", "Ocurrió un problema al guardar la tarea.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 🗑️ Función asíncrona para manejar la lógica de eliminación y logging
+  // const handleDelete = async (t: Tarea) => {
+  //     const deleteUrl = `${API}/tareas/${t.id}`;
+      
+  //     // Log de depuración
+  //     console.log("🔥 Confirmación de eliminación. Enviando DELETE a:", deleteUrl);
+      
+  //     try {
+  //         const res = await fetch(deleteUrl, { method: "DELETE" });
+          
+  //         if (!res.ok) {
+  //             const errorText = await res.text();
+  //             console.error("❌ Error del servidor al eliminar tarea:", res.status, errorText);
+  //             Alert.alert("Error", `No se pudo eliminar la tarea. Status: ${res.status}. ${errorText.substring(0, 50)}...`);
+  //             return;
+  //         }
+          
+  //         console.log("✅ Tarea eliminada exitosamente en el backend. Recargando lista.");
+          
+  //         await fetchTareas(); // Vuelve a cargar la lista
+          
+  //         Alert.alert("Eliminada", `La tarea "${t.titulo}" ha sido eliminada.`)
+          
+  //     } catch (e) {
+  //         console.error("❌ Error en el proceso de eliminación:", e);
+  //         Alert.alert("Error", "Ocurrió un problema de red o conexión al eliminar la tarea.");
+  //     }
+  // }
+
+
+  // 🗑️ Función onDelete (handler de Pressable) que dispara la alerta
+  const onDelete = async (activityId: string | number) => {
+    if (!API) return;
+    try {
+      console.log('recibido es',activityId)
+      const idStr = String(activityId);
+      const res = await fetch(`${API}/tareas/${idStr}`, { method: "DELETE" });
+      console.log('paso consulta')
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || `Error al eliminar (HTTP ${res.status})`);
+      }
+      await fetchTareas(); // 👈 mismo patrón que en gastos
+    } catch (err: any) {
+      console.error("Error borrar actividad:", err);
+      Alert.alert("Error", "No se pudo eliminar la actividad.");
+    }
+  };
+
+
+  if (loading && !viaje) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color={C.text} />
+        </Pressable>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={C.accent} size="large" />
+          <Text style={[styles.muted, { marginTop: 10 }]}>Cargando grupo y tareas...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+
+  return (
+    <SafeAreaView style={styles.safe}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+        </Pressable>
+      
+
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.accent} />
+        }
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {viaje && (
+          <View style={styles.header}>
+            {viaje.imagen ? (
+              <Image source={{ uri: viaje.imagen }} style={styles.cover} />
+            ) : (
+              <View style={[styles.cover, { backgroundColor: C.border }]} />
+            )}
+            <Text style={styles.title}>{viaje.nombre}</Text>
+            <Text style={styles.subtitle}>
+              {viaje.ubicacion ?? "—"} · {viaje.miembrosCant ?? 0} miembros
+            </Text>
+            {viaje.fechaInicio && (
+              <Text style={styles.dates}>
+                {new Date(viaje.fechaInicio).toLocaleDateString()} –{" "}
+                {viaje.fechaFin
+                  ? new Date(viaje.fechaFin).toLocaleDateString()
+                  : "sin fecha fin"}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <View style={{ paddingHorizontal: 16 }}>
+          <Pressable style={styles.primaryBtn} onPress={openCreate}>
+            <Text style={styles.primaryBtnText}>+ Nueva tarea</Text>
+          </Pressable>
+        </View>
+
+        {loading ? (
+          <Text style={[styles.muted, { textAlign: "center", marginTop: 20 }]}>Cargando…</Text>
+        ) : tareas.length === 0 ? (
+          <Text style={[styles.muted, { textAlign: "center", marginTop: 20 }]}>
+            No hay tareas registradas.
+          </Text>
+        ) : (
+          <FlatList
+            data={tareas}
+            scrollEnabled={false}
+            keyExtractor={(i) => i.id}
+            contentContainerStyle={{ padding: 16 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.taskCard}
+                onPress={() => openEdit(item)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.taskTitle}>{item.titulo}</Text>
+                  {item.descripcion ? (
+                    <Text style={styles.taskDesc}>{item.descripcion}</Text>
+                  ) : null}
+                  <Text style={styles.taskMeta}>
+                    {item.responsable
+                      ? `${item.responsable.nombre} ${item.responsable.apellido}`
+                      : "Sin asignar"}{" "}
+                    •{" "}
+                    {item.estado === "completada" ? "✅ Completada" : "🕓 Pendiente"}
+                  </Text>
+                </View>
+                {/* <Pressable onPress={() => onDelete(item)}>
+                  <Ionicons name="trash-outline" size={20} color={C.delete} />
+                </Pressable> */}
+              
+              <TouchableOpacity
+              
+                onPress={() => {
+                  console.log(item);
+                  onDelete(item.id)}
+                }   // 👈 antes: onDelete(item)
+                hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar actividad"
+              >
+                <Ionicons name="trash-outline" size={20} color={C.delete} />
+              </TouchableOpacity>
+
+              </TouchableOpacity>
+
+            )}
+          />
+        )}
+      </ScrollView>
+
+      <Modal
+        visible={isModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => (saving ? undefined : closeModal())}
+      >
+        <View style={styles.modalBackdrop} pointerEvents="box-none">
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selected?.id === "new" ? "Nueva tarea" : "Editar tarea"}
+              </Text>
+              <Pressable onPress={closeModal}>
+                <Ionicons name="close" size={22} color={C.text} />
+              </Pressable>
+            </View>
+
+            {selected && (
+              // CAMBIO CRÍTICO: Reemplazamos ScrollView por View para evitar conflictos de toque
+              <View style={{ gap: 14, paddingBottom: 10 }}> 
+                <LabeledInput
+                  label="Título"
+                  value={selected.titulo}
+                  onChangeText={(t) => setSelected({ ...selected, titulo: t })}
+                />
+                <LabeledInput
+                  label="Descripción"
+                  value={selected.descripcion || ""}
+                  onChangeText={(t) => setSelected({ ...selected, descripcion: t })}
+                  multiline
+                />
+
+                <View>
+                  <Text style={styles.label}>Estado</Text>
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    {["pendiente", "completada"].map((st) => (
+                      <Pressable
+                        key={st}
+                        onPress={() => setSelected({ ...selected, estado: st as any })}
+                        style={[
+                          styles.stateBtn,
+                          selected.estado === st && styles.stateBtnActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.stateBtnText,
+                            selected.estado === st && styles.stateBtnTextActive,
+                          ]}
+                        >
+                          {st === "pendiente" ? "Pendiente" : "Completada"}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={styles.label}>Responsable</Text>
+                  <View style={styles.dropdown}>
+                    <Pressable
+                      onPress={() => setSelected({ ...selected, responsableId: null })}
+                      style={[
+                        styles.option,
+                        (selected.responsableId === null ||
+                          selected.responsableId === undefined) && styles.optionActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+                          (selected.responsableId === null ||
+                            selected.responsableId === undefined) &&
+                            styles.optionTextActive,
+                        ]}
+                      >
+                        Sin asignar
+                      </Text>
+                    </Pressable>
+
+                    {participantes.map((p) => (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => setSelected({ ...selected, responsableId: Number(p.id) })}
+                        style={[
+                          styles.option,
+                          selected.responsableId === Number(p.id) && styles.optionActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.optionText,
+                            selected.responsableId === Number(p.id) && styles.optionTextActive,
+                          ]}
+                        >
+                          {p.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <Pressable
+                  style={[styles.primaryBtn, saving && { opacity: 0.7 }]}
+                  onPress={() => {
+                    // CONSOLE.LOG DE PRUEBA: Si ves esto, el botón funciona.
+                    console.log("✅ Botón 'Guardar cambios' presionado. Llamando a onSave...");
+                    onSave();
+                  }}
+                  disabled={saving}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {saving ? "Guardando..." : "Guardar cambios"}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-
   backBtn: {
     position: "absolute",
     top: 12,
     left: 12,
-    zIndex: 20,
+    zIndex: 10,
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1f1b",
     borderWidth: 1,
-    borderColor: "#2a322b",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    borderColor: C.border,
   },
-
-  portadaWrap: { width: "100%", position: "relative", marginBottom: 60 },
-  portada: {
+  header: { alignItems: "center", paddingBottom: 20 },
+  cover: {
     width: "100%",
     height: 160,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  avatarOverlay: {
-    position: "absolute",
-    bottom: -40,
-    left: "50%",
-    marginLeft: -40,
-    overflow: "hidden",
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: C.card,
-    borderWidth: 3,
-    borderColor: C.bg,
+  title: { fontSize: 22, color: C.text, fontWeight: "700", marginTop: 8 },
+  subtitle: { color: C.muted, marginTop: 4 },
+  dates: { color: C.muted, marginTop: 4, fontSize: 13 },
+  primaryBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 12,
     alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 12,
+    marginVertical: 8,
   },
-
-  title: {
-    marginTop: 12,
-    fontSize: 22,
-    fontWeight: "700",
-    color: C.text,
-    textAlign: "center",
-  },
-
-  card: {
-    width: "90%",
-    backgroundColor: C.card,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 12,
-    alignSelf: "center",
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  cardTitle: { color: C.text, fontSize: 16, fontWeight: "700" },
+  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
   muted: { color: C.muted, fontSize: 14 },
-
-  bannerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-
-  topActionButtonContainer: {
-      width: "90%",
-      alignSelf: "center",
-      marginTop: 16,
-      marginBottom: 8,
-  },
-  
-  sectionTitle: {
-    color: C.text,
-    fontWeight: "700",
-    fontSize: 16,
-    marginTop: 18,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-
   taskCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: C.card,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  taskCardCompleted: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: C.card,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-    opacity: 0.6,
-  },
-  taskCardOverdue: {
-      borderColor: C.delete, 
-      backgroundColor: '#201a1c',
-  },
-  taskToggleArea: {
-    padding: 4,
-    marginRight: 4,
-    paddingTop: 2,
-  },
-  taskContent: { 
-      flex: 1,
-      paddingLeft: 8,
-  },
-  taskHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center", 
-    marginBottom: 6,
-  },
-  taskTitle: { fontSize: 16, fontWeight: "700", color: C.text, flexShrink: 1, marginRight: 8 },
-  taskTitleCompleted: { fontSize: 16, fontWeight: "500", color: C.muted, textDecorationLine: 'line-through', flexShrink: 1, marginRight: 8 },
-  editButton: {
-      padding: 4, 
-  },
-
-  row: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  rowText: { fontSize: 13, color: C.muted },
-
-  chips: { marginTop: 8, flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: {
-    backgroundColor: "#233027",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    alignItems: "center",
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: C.border,
   },
-  chipText: { fontSize: 12, color: C.accent },
-  
+  taskTitle: { fontSize: 16, fontWeight: "700", color: C.text },
+  taskDesc: { color: C.muted, fontSize: 13, marginTop: 4 },
+  taskMeta: { color: C.muted, fontSize: 12, marginTop: 6 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 16,
     justifyContent: "flex-end",
+    padding: 16,
   },
   modalCard: {
-    maxHeight: "88%",
+    maxHeight: "90%",
     backgroundColor: C.card,
     borderRadius: 16,
-    padding: 16,
-    gap: 12,
     borderWidth: 1,
     borderColor: C.border,
+    padding: 16,
   },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: C.text },
-
+  modalTitle: { fontSize: 18, color: C.text, fontWeight: "800" },
   label: { fontSize: 13, color: C.text, fontWeight: "700" },
   input: {
     borderWidth: 1,
@@ -676,40 +613,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f1511",
     color: C.text,
   },
-
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#2a322b",
+  dropdown: {
+    backgroundColor: "#0f1511",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingVertical: 4,
+  },
+  option: { paddingVertical: 8, paddingHorizontal: 12 },
+  optionActive: { backgroundColor: C.accent + "20" },
+  optionText: { color: C.text },
+  optionTextActive: { color: C.accent, fontWeight: "700" },
+  stateBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: C.border,
   },
-  pillActive: { backgroundColor: "#233027", borderColor: C.accent },
-  pillText: { fontSize: 13, color: C.text },
-  pillTextActive: { color: C.accent, fontWeight: "700" },
-
-  checkRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
-  checkText: { fontSize: 14, color: C.text },
-  
-  primaryBtn: {
-    backgroundColor: C.accent,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
-  
-  deleteBtn: {
-      backgroundColor: 'transparent',
-      marginTop: 8,
-      borderWidth: 1,
-      borderColor: C.delete,
-  },
-  deleteBtnText: {
-      color: C.delete,
-      fontWeight: "800",
-      fontSize: 15,
-  },
+  stateBtnActive: { backgroundColor: C.accent + "20" },
+  stateBtnText: { color: C.text },
+  stateBtnTextActive: { color: C.accent, fontWeight: "700" },
 });

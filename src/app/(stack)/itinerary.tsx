@@ -10,7 +10,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Grupo = {
     id: number;
@@ -101,12 +101,13 @@ export default function ItineraryScreen() {
   // ---- Helpers ----
   const dateFormat = useCallback((iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString("es-AR", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (isNaN(d.getTime())) return "—";
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`; // 👈 dd/mm/aaaa HH:MM
   }, []);
 
   const fetchActivities = useCallback(async () => {
@@ -175,11 +176,20 @@ export default function ItineraryScreen() {
     setSelectedActivity(null);
     setIsModalOpen(false);
   };
-
-  const validate = (a: Activity) => {
-    if (!a.title?.trim()) return "Falta el título.";
-    if (!a.dateTime?.trim()) return "Falta la fecha y hora.";
-    return null;
+  const onDelete = async (activityId: string | number) => {
+    if (!API) return;
+    try {
+      const idStr = String(activityId);
+      const res = await fetch(`${API}/viajes/itinerario/${idStr}`, { method: "DELETE" });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || `Error al eliminar (HTTP ${res.status})`);
+      }
+      await fetchActivities(); // 👈 mismo patrón que en gastos
+    } catch (err: any) {
+      console.error("Error borrar actividad:", err);
+      Alert.alert("Error", "No se pudo eliminar la actividad.");
+    }
   };
 
   const onSaveChanges = async () => {
@@ -299,46 +309,9 @@ export default function ItineraryScreen() {
   }, [API, viajeId]);
   
 
-  const onDelete = (activity: Activity) => {
-    Alert.alert("Eliminar", "¿Querés eliminar esta actividad?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          if (!API) return;
-          const url = `${API}/viajes/itinerario/${activity.id}`;
-          try {
-            console.log("DELETE URL ->", url, "id:", activity.id);
   
-            // Optimista: sacamos de UI
-            setActivities(prev => prev.filter(x => x.id !== activity.id));
   
-            const res = await fetch(url, { method: "DELETE" });
-            console.log("DELETE status:", res.status);
   
-            // si el back respondió JSON (como arriba), lo vemos:
-            let payload: any = null;
-            try { payload = await res.json(); } catch {}
-            console.log("DELETE payload:", payload);
-  
-            if (!res.ok) {
-              throw new Error(`HTTP ${res.status} ${payload?.error ?? ""}`);
-            }
-  
-            // todo ok: opcional refetch para asegurar
-            // await fetchActivities();
-  
-          } catch (e: any) {
-            console.error("DELETE error:", e);
-            Alert.alert("Error", "No se pudo eliminar. Recargando lista…");
-            // revertir o refetchear
-            fetchActivities();
-          }
-        },
-      },
-    ]);
-  };
   
 
   // Normaliza: si viene "2025-12-01T20:30" lo convertimos a ISO con zona
@@ -386,7 +359,6 @@ export default function ItineraryScreen() {
 
         <Pressable style={[styles.card, { marginTop: 16 }]} disabled>
             <Text style={styles.cardTitle}>Viaje {nombreGrupo}</Text>
-            <Text style={styles.muted}>{headerSubtitle}</Text>
         </Pressable>
 
         <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 12 }}>
@@ -426,10 +398,7 @@ renderItem={({ item }) => (
   
           {/* Tachito: botón independiente */}
           <TouchableOpacity
-            onPress={() => {
-              console.log("trash pressed", item.id);
-              onDelete(item);
-            }}
+            onPress={() => onDelete(item.id)}   // 👈 antes: onDelete(item)
             hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
             activeOpacity={0.6}
             accessibilityRole="button"
