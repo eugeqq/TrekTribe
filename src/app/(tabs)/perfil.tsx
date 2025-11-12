@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import EditableRow from "../../components/EditableRow";
@@ -43,10 +44,55 @@ export default function PerfilScreen() {
     avatarUri: undefined,
   });
 
+  const pickImage = async () => {
+  try {
+    // Pedir permiso para acceder a las fotos
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      alert("Se necesita permiso para acceder a las fotos.");
+      return;
+    }
+
+    // Abrir galería
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    // Si el usuario canceló
+    if (result.canceled) return;
+
+    const imageUri = result.assets[0].uri;
+
+    // Guardar en frontend y backend
+    setData((prev) => ({ ...prev, avatarUri: imageUri }));
+
+    const userId = await AsyncStorage.getItem("userId");
+    if (!userId) return;
+
+    // Enviar al backend
+    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, avatarUri: imageUri }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("Error al actualizar avatar:", err.error);
+    }
+  } catch (err) {
+    console.error("Error seleccionando imagen:", err);
+  }
+};
+
   const [open, setOpen] = useState(false);
   const [field, setField] = useState<FieldKey | null>(null);
   const [tempValue, setTempValue] = useState("");
-useEffect(() => {
+  useEffect(() => {
   const loadUser = async () => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -85,10 +131,38 @@ useEffect(() => {
     setOpen(true);
   };
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!field) return;
-    setData((prev) => ({ ...prev, [field]: tempValue }));
-    setOpen(false);
+    //setData((prev) => ({ ...prev, [field]: tempValue }));
+    //setOpen(false);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) return;
+
+    // Crear nuevo objeto actualizado
+      const updatedData = { ...data, [field]: tempValue };
+
+    // Actualizar backend
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+        method: "PUT",
+        headers: {
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Error al actualizar:", err.error);
+        return;
+      }
+
+    // Si se guardó bien, actualizamos el estado local
+      setData(updatedData);
+      setOpen(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+    }
   };
 
   const close = () => setOpen(false);
@@ -97,7 +171,7 @@ useEffect(() => {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         
-        <Pressable style={styles.avatarWrap} onPress={() => {}}>
+        <Pressable style={styles.avatarWrap} onPress={pickImage}>
           {data.avatarUri ? (
             <Image source={{ uri: data.avatarUri }} style={styles.avatar} />
           ) : (
@@ -113,7 +187,6 @@ useEffect(() => {
         <EditableRow label={LABELS.telefono} value={data.telefono} onPress={() => onEdit("telefono")} />
         <EditableRow label={LABELS.fechaNacimiento} value={data.fechaNacimiento} onPress={() => onEdit("fechaNacimiento")} />
         <EditableRow label={LABELS.dni} value={data.dni} onPress={() => onEdit("dni")} />
-        <EditableRow label={LABELS.apodo} value={data.apodo} onPress={() => onEdit("apodo")} />
       </ScrollView>
 
       
