@@ -17,7 +17,9 @@ type Grupo = {
 
 export default function GrupoScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; grupo?: string }>();
+  const idParam = params.id;
+  const grupoParam = params.grupo; 
 
   const [data, setData] = useState<Grupo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,25 +29,112 @@ export default function GrupoScreen() {
     let cancel = false;
     (async () => {
       try {
-        if (!id) throw new Error("Falta el id del grupo");
         setLoading(true);
         setErr(null);
-
         
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${id}`, {
-       
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json: Grupo = await res.json();
-        if (!cancel) setData(json);
+        if (grupoParam) {
+          console.log("singleTribe: recibiendo grupo por params (no fetch).");
+          try {
+            const parsed = JSON.parse(String(grupoParam));
+            // normalizar estructura si hace falta
+            const miembros =
+              Array.isArray(parsed.miembros) && parsed.miembros.length > 0
+                ? parsed.miembros.map((m: any) =>
+                    typeof m === "string" ? { id: m, nombre: m } : { id: m.id ?? m.usuarioId ?? m.name ?? m.nombre, nombre: m.nombre ?? `${m.usuario?.nombre ?? ""} ${m.usuario?.apellido ?? ""}`.trim() }
+                  )
+                : Array.isArray(parsed.miembrosNombres)
+                ? parsed.miembrosNombres.map((n: string, i: number) => ({ id: i + 1, nombre: n }))
+                : [];
+
+            const normalized: Grupo = {
+              id: parsed.id,
+              nombre: parsed.nombre,
+              ubicacion: parsed.ubicacion,
+              descripcion: parsed.descripcion,
+              fechaInicio: parsed.fechaInicio,
+              fechaFin: parsed.fechaFin,
+              foto: parsed.imagen ?? parsed.foto ?? null,
+              miembros,
+            };
+            if (!cancel) setData(normalized);
+            return;
+
       } catch (e: any) {
-        if (!cancel) setErr(e.message ?? "Error desconocido");
+       console.warn("singleTribe: fallo al parsear param grupo:", e);
+      
+      } 
+    }
+    if (!idParam) {
+          throw new Error("Falta el id del grupo (params)");
+        }
+
+        const id = String(idParam);
+        const url = `${process.env.EXPO_PUBLIC_API_URL}/viajes/detalle/${id}`;
+        console.log("singleTribe: fetch ->", url);
+
+        const res = await fetch(url);
+        const text = await res.text();
+        console.log("singleTribe: HTTP", res.status, "body:", text);
+
+        if (!res.ok) {
+          // tratar de parsear JSON de error si existe
+          let message = `HTTP ${res.status}`;
+          try {
+            const j = JSON.parse(text);
+            message = j.error ?? JSON.stringify(j);
+          } catch {}
+          throw new Error(message);
+        }
+
+        const jsonData = (() => {
+          try { return JSON.parse(text); }
+          catch { return text as any; }
+        })();
+
+        console.log("singleTribe: jsonData ->", jsonData);
+
+        // Normalizar: el backend puede devolver:
+        // - miembros: [{ usuario: {...} }] o [{ id, nombre }]
+        // - o miembrosNombres: ["Juan Pérez", ...]
+        // - imagen o foto
+        let miembros: Miembro[] = [];
+        if (Array.isArray(jsonData.miembros)) {
+          miembros = jsonData.miembros.map((m: any) => {
+            if (typeof m === "string") return { id: m, nombre: m };
+            // si viene {usuario: {...}}
+            if (m.usuario) {
+              const nombre = `${m.usuario.nombre ?? ""} ${m.usuario.apellido ?? ""}`.trim();
+              return { id: m.usuario.id ?? m.id ?? `${m.usuario.nombre}`, nombre: nombre || String(m.usuario.id) };
+            }
+            // si viene {id, nombre}
+            return { id: m.id ?? m.usuarioId ?? m.miembroId ?? JSON.stringify(m), nombre: m.nombre ?? m.name ?? String(m.id) };
+          });
+        } else if (Array.isArray(jsonData.miembrosNombres)) {
+          miembros = jsonData.miembrosNombres.map((n: string, i: number) => ({ id: i + 1, nombre: n }));
+        }
+
+        const normalized: Grupo = {
+          id: jsonData.id,
+          nombre: jsonData.nombre ?? jsonData.nombreGrupo ?? "Grupo",
+          ubicacion: jsonData.ubicacion,
+          descripcion: jsonData.descripcion,
+          fechaInicio: jsonData.fechaInicio,
+          fechaFin: jsonData.fechaFin,
+          foto: jsonData.imagen ?? jsonData.foto ?? null,
+          miembros,
+        };
+
+        if (!cancel) setData(normalized);
+      } catch (e: any) {
+        console.error("singleTribe: error cargando grupo ->", e);
+        if (!cancel) setErr(String(e.message ?? e));
       } finally {
         if (!cancel) setLoading(false);
       }
+
     })();
     return () => { cancel = true; };
-  }, [id]);
+  }, [idParam, grupoParam]);
 
   if (loading) {
     return (

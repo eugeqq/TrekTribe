@@ -31,7 +31,7 @@ const KEYBOARD: Partial<Record<FieldKey, "default" | "numeric" | "email-address"
 };
 
 export default function PerfilScreen() {
-  const USER_ID = 1;
+  
 
   const [data, setData] = useState<Profile>({
     nombre: "",
