@@ -396,7 +396,10 @@ export default function ExpensesScreen({ route }: any) {
         </Pressable>
 
         <View style={styles.portadaWrap}>
-          <Image source={{ uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e" }} style={styles.portada} />
+          <Image
+                      source={require('../banner.png')}
+                      style={styles.portada}
+                    />
           <View style={styles.avatarOverlay}>
             <View style={styles.avatarCircle}>
               <Ionicons name="wallet-outline" size={30} color={C.accent} />

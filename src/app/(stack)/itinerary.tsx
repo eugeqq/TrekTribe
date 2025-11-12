@@ -343,9 +343,7 @@ export default function ItineraryScreen() {
       >
         <View style={styles.portadaWrap}>
           <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-            }}
+            source={require('../banner.png')}
             style={styles.portada}
           />
           <View style={styles.avatarOverlay}>

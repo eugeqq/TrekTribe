@@ -331,11 +331,10 @@ export default function ToDosScreen() {
       >
         {viaje && (
           <View style={styles.header}>
-            {viaje.imagen ? (
-              <Image source={{ uri: viaje.imagen }} style={styles.cover} />
-            ) : (
-              <View style={[styles.cover, { backgroundColor: C.border }]} />
-            )}
+            <Image
+                        source={require('../banner.png')}
+                        style={styles.portada}
+                      />
             <Text style={styles.title}>{viaje.nombre}</Text>
             <Text style={styles.subtitle}>
               {viaje.ubicacion ?? "—"} · {viaje.miembrosCant ?? 0} miembros
@@ -552,6 +551,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: C.border,
+  },
+  portadaWrap: { width: "100%", position: "relative", marginBottom: 60 },
+  portada: {
+    width: "100%",
+    height: 160,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   header: { alignItems: "center", paddingBottom: 20 },
   cover: {
