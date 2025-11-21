@@ -33,6 +33,7 @@ export default function GrupoScreen() {
   const idParam = params.id;
   const grupoParam = params.grupo;
 
+
   const [data, setData] = useState<Grupo | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -43,13 +44,14 @@ export default function GrupoScreen() {
       try {
         setLoading(true);
         setErr(null);
-
+         console.log("GRUPO PARAM  >>>", idParam); 
         if (grupoParam) {
           const parsed = JSON.parse(String(grupoParam));
+
           const miembros = Array.isArray(parsed.miembros)
             ? parsed.miembros.map((m: any, i: number) => ({
-                id: m.id ?? i + 1,
-                nombre: m.nombre ?? `Miembro ${i + 1}`,
+                id: m.usuario?.id ?? m.id ?? i + 1,
+                nombre: m.usuario?.nombre ?? `Miembro ${i + 1}`,
               }))
             : [];
           const normalized: Grupo = {
