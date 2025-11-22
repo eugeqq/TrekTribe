@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { Image } from "react-native";
+
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -12,6 +13,7 @@ type Grupo = {
   descripcion?: string;
   fechaInicio?: string;
   fechaFin?: string;
+  imagenUrl?: string;
 };
 
 export default function GruposScreen() {
@@ -37,6 +39,7 @@ export default function GruposScreen() {
           descripcion: v.descripcion ?? "",
           fechaInicio: v.fechaInicio ?? null,
           fechaFin: v.fechaFin ?? null,
+          imagenUrl: v.imagenUrl ?? null,
         }));
         setGrupos(normalizados);
       } catch (error) {
@@ -87,7 +90,9 @@ export default function GruposScreen() {
             }
           >
             <View style={styles.iconCircle}>
-              <Ionicons name="people-outline" size={28} color="#9ec39f" />
+             <Image source={{ uri: grupo.imagenUrl || undefined }}
+                style={{ width: 50, height: 50, borderRadius: 25 }}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.grupoNombre}>{grupo.nombre}</Text>

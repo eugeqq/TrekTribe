@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Miembro = { id: string | number; nombre: string };
 type Grupo = {
@@ -11,6 +11,7 @@ type Grupo = {
   descripcion?: string;
   fechaInicio?: string;
   fechaFin?: string;
+  imagenUrl?: string;   
   miembros?: Miembro[];
 };
 
@@ -84,6 +85,7 @@ export default function GrupoScreen() {
           descripcion: json.descripcion,
           fechaInicio: json.fechaInicio,
           fechaFin: json.fechaFin,
+          imagenUrl: json.imagenUrl,  
           miembros,
         };
         if (!cancel) setData(normalized);
@@ -133,7 +135,15 @@ export default function GrupoScreen() {
         </Pressable>
         
         <View style={styles.iconWrap}>
-          <Ionicons name="people-circle-outline" size={100} color="#9ec39f" />
+          <Image source={{ uri: data.imagenUrl }}
+            style={{
+            width: 100, 
+            height: 100, 
+            borderRadius: 50, 
+            borderWidth: 2, 
+            borderColor: "#2a322b",
+    }}
+  />
         </View>
 
         <Text style={styles.groupName}>{nombre ?? "Grupo"}</Text>

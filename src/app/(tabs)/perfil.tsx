@@ -73,11 +73,25 @@ export default function PerfilScreen() {
     const userId = await AsyncStorage.getItem("userId");
     if (!userId) return;
 
+    let formData = new FormData();
+
+    formData.append("avatar", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "avatar.jpg",
+    });
+
+    Object.keys(data).forEach((key) => {
+      if (key !== "avatarUri") {
+        formData.append(key, data[key]);
+      }
+    });
+
     // Enviar al backend
     const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, avatarUri: imageUri }),
+      body: formData,
     });
 
     if (!res.ok) {
