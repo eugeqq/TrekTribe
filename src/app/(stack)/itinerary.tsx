@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 type Grupo = {
     id: number;
     nombre: string;
+    imagenUrl?: string;   
   };
   
 type Activity = {
@@ -87,11 +88,11 @@ async function safeJson(res: Response) {
   }
 
 export default function ItineraryScreen() {
-  const router = useRouter();
-  const { viajeId, nombre } = useLocalSearchParams<{ viajeId?: string; nombre?: string }>();
-
-  const API = process.env.EXPO_PUBLIC_API_URL;
   
+  const router = useRouter();
+  const { viajeId, nombre,imagenUrl} = useLocalSearchParams<{ viajeId?: string; nombre?: string; imagenUrl?:string; }>();
+  
+  const API = process.env.EXPO_PUBLIC_API_URL;
   const [grupo, setGrupo] = useState<Grupo | null>({ id: Number(viajeId), nombre: nombre ?? "Grupo" });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -333,7 +334,6 @@ export default function ItineraryScreen() {
 
   const nombreGrupo = grupo?.nombre ?? "Grupo";
 
-
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -347,7 +347,8 @@ export default function ItineraryScreen() {
 
         <View style={styles.portadaWrap}>
           <Image
-            source={require('../banner.png')}
+            
+            source={{uri:imagenUrl}}
             style={styles.portada}
           />
           <View style={styles.avatarOverlay}>

@@ -39,6 +39,7 @@ type Grupo = {
   fechaFin?: string;
   foto?: string | null;
   miembros?: Miembro[];
+  imagenUrl?: string;
 };
 
 /* Colors + styles (mantengo los tuyos) */
@@ -182,8 +183,13 @@ export default function ExpensesScreen({ route }: any) {
   const router = useRouter();
   //const params = useLocalSearchParams();
   //console.log("params en ExpensesScreen:", params);
-  const params = useLocalSearchParams<{ grupo?: string }>();
+  const params = useLocalSearchParams<{ grupo?: string; imageUrl?:string }>();
+  
   const { grupo } = params; 
+
+  const parsed=JSON.parse(grupo);
+  
+
  
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -402,7 +408,7 @@ export default function ExpensesScreen({ route }: any) {
   
             <View style={styles.portadaWrap}>
               <Image
-                source={require("../banner.png")}
+                source={{uri:parsed.imagenUrl}}
                 style={styles.portada}
               />
               <View style={styles.avatarOverlay}>

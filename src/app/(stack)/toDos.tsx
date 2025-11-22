@@ -93,8 +93,9 @@ async function safeJson(res: Response) {
 }
 
 export default function ToDosScreen() {
-  const { groupId } = useLocalSearchParams();
+  const { groupId,imagenUrl} = useLocalSearchParams<{ groupId?: string; imagenUrl?:string; }>();
   const router = useRouter();
+  
   // Asegúrate de que esta variable de entorno esté definida en tu proyecto Expo
   const API = process.env.EXPO_PUBLIC_API_URL; 
 
@@ -334,7 +335,7 @@ export default function ToDosScreen() {
         {viaje && (
           <View style={styles.header}>
             <Image
-                        source={require('../banner.png')}
+                        source={{uri:imagenUrl}}
                         style={styles.portada}
                       />
             <Text style={styles.title}>{viaje.nombre}</Text>

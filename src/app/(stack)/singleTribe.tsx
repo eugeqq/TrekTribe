@@ -182,13 +182,13 @@ export default function GrupoScreen() {
             </Pressable>
           </Link>
 
-          <Link href={{ pathname: "/(stack)/toDos", params: { groupId: String(data.id) } }} asChild>
+          <Link href={{ pathname: "/(stack)/toDos", params: { groupId: String(data.id) , imagenUrl: data.imagenUrl} }} asChild>
             <Pressable style={styles.funcButton}>
               <Text style={styles.funcButtonText}>Tareas</Text>
             </Pressable>
           </Link>
 
-          <Link href={{ pathname: "/(stack)/itinerary", params: { viajeId: String(data.id), nombre: data.nombre } }} asChild>
+          <Link href={{ pathname: "/(stack)/itinerary", params: { viajeId: String(data.id), nombre: data.nombre, imagenUrl: data.imagenUrl, } }} asChild>
             <Pressable style={styles.funcButton}>
               <Text style={styles.funcButtonText}>Itinerario</Text>
             </Pressable>
