@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import DateField from "../../components/DateField";
 import EditableRow from "../../components/EditableRow";
 
 type Profile = {
@@ -181,6 +182,31 @@ export default function PerfilScreen() {
 
   const close = () => setOpen(false);
 
+  const onDateSelected = async (formatted: string) => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) return;
+
+      const updatedData = { ...data, fechaNacimiento: formatted };
+
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Error al actualizar fecha:", err.error);
+        return;
+      }
+
+      setData(updatedData);
+    } catch (err) {
+      console.error("Error al guardar fecha:", err);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -199,7 +225,12 @@ export default function PerfilScreen() {
         <EditableRow label={LABELS.nombre} value={data.nombre} onPress={() => onEdit("nombre")} />
         <EditableRow label={LABELS.apellido} value={data.apellido} onPress={() => onEdit("apellido")} />
         <EditableRow label={LABELS.telefono} value={data.telefono} onPress={() => onEdit("telefono")} />
-        <EditableRow label={LABELS.fechaNacimiento} value={data.fechaNacimiento} onPress={() => onEdit("fechaNacimiento")} />
+        <DateField
+          value={data.fechaNacimiento}
+          placeholder="Fecha de nacimiento"
+          onChange={onDateSelected}
+          showEditLabel
+        />
         <EditableRow label={LABELS.dni} value={data.dni} onPress={() => onEdit("dni")} />
       </ScrollView>
 

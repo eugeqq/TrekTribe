@@ -45,7 +45,6 @@ export default function GrupoScreen() {
       try {
         setLoading(true);
         setErr(null);
-         console.log("GRUPO PARAM  >>>", idParam); 
         if (grupoParam) {
           const parsed = JSON.parse(String(grupoParam));
 

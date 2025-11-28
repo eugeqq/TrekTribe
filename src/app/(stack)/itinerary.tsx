@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateField from "../../components/DateField";
 
 type Grupo = {
     id: number;
@@ -86,6 +87,27 @@ async function safeJson(res: Response) {
     const text = await res.text();
     try { return text ? JSON.parse(text) : {}; } catch { return {}; }
   }
+
+// Convierte DD/MM/AAAA a ISO manteniendo hora actual
+function ddmmyyyyToIso(ddmmyyyy: string, isoWithTime: string): string {
+  const m = ddmmyyyy.match(/^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/);
+  if (!m) return isoWithTime;
+  const dd = m[1];
+  const mm = m[2];
+  const yyyy = m[3];
+  // Extraer hora del ISO anterior (o usar 00:00)
+  const timeMatch = isoWithTime.match(/T([0-9]{2}):([0-9]{2})/);
+  const hh = timeMatch ? timeMatch[1] : "00";
+  const mi = timeMatch ? timeMatch[2] : "00";
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+// Convierte ISO a DD/MM/AAAA
+function isoToDdmmyyyy(iso: string): string {
+  const m = iso.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})/);
+  if (!m) return "";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
 
 export default function ItineraryScreen() {
   
@@ -226,7 +248,6 @@ export default function ItineraryScreen() {
           body: JSON.stringify(payload),
         });
       
-        console.log("POST /viajes/:id/itinerario ->", res.status);
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
           throw new Error(`POST itinerario ${res.status} ${txt}`);
@@ -257,7 +278,6 @@ export default function ItineraryScreen() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });      
-        console.log("PUT /itinerario/:id ->", res.status);
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
           throw new Error(`PUT itinerario ${res.status} ${txt}`);
@@ -514,14 +534,18 @@ renderItem={({ item }) => (
                   })
                 }
               />
-              <LabeledInput
-                label="Fecha y Hora (ISO/local)"
-                value={selectedActivity.dateTime}
-                onChangeText={(t) =>
-                  setSelectedActivity({ ...selectedActivity, dateTime: t })
-                }
-                placeholder="Ej: 2025-12-01T20:30"
-              />
+              <View style={{ gap: 6 }}>
+                <Text style={styles.label}>Fecha y Hora</Text>
+                <DateField
+                  value={isoToDdmmyyyy(selectedActivity.dateTime)}
+                  placeholder="Seleccionar fecha"
+                  onChange={(formatted) => {
+                    const isoDate = ddmmyyyyToIso(formatted, selectedActivity.dateTime);
+                    setSelectedActivity({ ...selectedActivity, dateTime: isoDate });
+                  }}
+                  iconColor="#9ec39f"
+                />
+              </View>
               <LabeledInput
                 label="Categoría"
                 value={selectedActivity.category || ""}

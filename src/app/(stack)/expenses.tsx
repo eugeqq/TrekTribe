@@ -181,16 +181,12 @@ function BalanceSummary({ balances, participantsById, onSettleDebt }: { balances
 /* Main component (mantengo modales y comportamiento) */
 export default function ExpensesScreen({ route }: any) {
   const router = useRouter();
-  //const params = useLocalSearchParams();
-  //console.log("params en ExpensesScreen:", params);
   const params = useLocalSearchParams<{ grupo?: string; imageUrl?:string }>();
   
   const { grupo } = params; 
 
   const parsed=JSON.parse(grupo);
   
-
- 
 
   const [userId, setUserId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -256,7 +252,6 @@ export default function ExpensesScreen({ route }: any) {
   const fetchTripData = async (tripId: number) => {
     try {
       setLoading(true);
-      console.log("fetchTripData() -> viajeId:", tripId);
       const [detalleRes, expRes] = await Promise.all([
         fetch(`${API_URL}/viajes/detalle/${tripId}`),
         fetch(`${API_URL}/viajes/${tripId}/gastos`),
@@ -268,8 +263,6 @@ export default function ExpensesScreen({ route }: any) {
       const detalleData = await detalleRes.json();
       const expData = await expRes.json();
 
-      console.log("Detalle viaje recibido:", detalleData);
-
       const participantesAdaptados = detalleData.miembros.map((m: any) => ({
         id: String(m.usuario?.id ?? m.usuarioId),  // ID del miembro (no del usuario)
         miembroId: String(m.id),  
@@ -278,7 +271,6 @@ export default function ExpensesScreen({ route }: any) {
         rol: m.rol,
       }));
 
-      console.log("Participantes adaptados:", participantesAdaptados);
       setParticipants(participantesAdaptados);
 
       const gastosAdaptados = expData.map((e: any) => ({
@@ -337,7 +329,6 @@ export default function ExpensesScreen({ route }: any) {
   };
 
   const onSaveExpense = async () => {
-     console.log("onSaveExpense llamado", { draftTitle, draftAmount, draftPayer, draftSelected });
     if (!draftTitle || !draftAmount || !draftPayer) {
       Alert.alert("Error", "Completá descripción, monto y pagador.");
       return;
@@ -351,7 +342,6 @@ export default function ExpensesScreen({ route }: any) {
         viajeId: Number(viajeId),
         participantes: draftSelected.map(id => Number(id)), 
       };
-      console.log("Gasto a enviar:", payload);
 
       const url = editExpenseId ? `${API_URL}/gastos/${editExpenseId}` : `${API_URL}/gastos`;
       const method = editExpenseId ? "PUT" : "POST";

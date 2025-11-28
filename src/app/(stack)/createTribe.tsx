@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateField from "../../components/DateField";
 
 export default function CrearGrupoScreen() {
   const [nombre, setNombre] = useState("");
@@ -56,6 +57,8 @@ export default function CrearGrupoScreen() {
     );
   };
 
+
+
   const onCreateTribe = async () => {
     setErrorMessage("");  
 
@@ -86,9 +89,6 @@ export default function CrearGrupoScreen() {
           type: "image/jpeg",           // MIME correcto
         } as any);
       }
-
-      console.log("POST /tribes ->", process.env.EXPO_PUBLIC_API_URL);
-      console.log("imagenUri:", imagenUri);
       
 
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tribes`, {
@@ -103,8 +103,7 @@ export default function CrearGrupoScreen() {
       }
   
       const data = await response.json(); 
-      console.log("Tribu creada", data);
-      
+    
       
       setSuccessMessage("Tribu creada con éxito.");
       
@@ -130,7 +129,7 @@ export default function CrearGrupoScreen() {
             })
           );
           const fallas = invites.filter(i => !i.ok);
-          console.log("Invites:", invites);
+          //console.log("Invites:", invites);
           if (fallas.length === 0) {
             setSuccessMessage(`Tribu creada e invitados agregados`);
           } else {
@@ -220,21 +219,16 @@ export default function CrearGrupoScreen() {
             multiline
           />
 
-
-          <TextInput
-            placeholder="Fecha de inicio (DD/MM/AAAA)"
-            placeholderTextColor="#9aa49d"
+          <DateField
             value={fechaInicio}
-            onChangeText={setFechaInicio}
-            style={styles.input}
+            placeholder="Fecha de inicio (DD/MM/AAAA)"
+            onChange={(formatted) => setFechaInicio(formatted)}
           />
 
-          <TextInput
-            placeholder="Fecha de fin (DD/MM/AAAA)"
-            placeholderTextColor="#9aa49d"
+          <DateField
             value={fechaFin}
-            onChangeText={setFechaFin}
-            style={styles.input}
+            placeholder="Fecha de fin (DD/MM/AAAA)"
+            onChange={(formatted) => setFechaFin(formatted)}
           />
 
           <TextInput
