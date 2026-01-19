@@ -1,13 +1,13 @@
-import React from "react";
-import { useLocalSearchParams } from "expo-router";
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Grupo = { id: number; nombre: string };
 
 export default function PerfilAmigoScreen() {
   const raw = useLocalSearchParams<{
+    id?: string;
     nombre?: string;
     apellido?: string;
     telefono?: string;
@@ -15,34 +15,67 @@ export default function PerfilAmigoScreen() {
     dni?: string;
     apodo?: string;
     avatarUri?: string;
-    grupos?: string; 
+    grupos?: string;
   }>();
 
-  
-  const nombre          = raw.nombre ?? "Invitado";
-  const apellido        = raw.apellido ?? "";
-  const telefono        = raw.telefono ?? "—";
-  const fechaNacimiento = raw.fechaNacimiento ?? "—";
-  const dni             = raw.dni ?? "—";
-  const apodo           = raw.apodo ?? "";
-  const avatarUri       =
-    raw.avatarUri && raw.avatarUri.length
-      ? raw.avatarUri
-      : "https://i.pravatar.cc/200";
+  const API = process.env.EXPO_PUBLIC_API_URL;
+
+  const [loading, setLoading] = useState(false);
+  const [nombre, setNombre] = useState(raw.nombre ?? "Invitado");
+  const [apellido, setApellido] = useState(raw.apellido ?? "");
+  const [telefono, setTelefono] = useState(raw.telefono ?? "—");
+  const [fechaNacimiento, setFechaNacimiento] = useState(raw.fechaNacimiento ?? "—");
+  const [dni, setDni] = useState(raw.dni ?? "—");
+  const [apodo, setApodo] = useState(raw.apodo ?? "");
+  const [avatarUri, setAvatarUri] = useState(
+    raw.avatarUri && raw.avatarUri.length ? raw.avatarUri : "https://i.pravatar.cc/200"
+  );
+  const [grupos, setGrupos] = useState<Grupo[]>(() => {
+    try {
+      if (raw.grupos) {
+        const parsed = JSON.parse(String(raw.grupos));
+        if (Array.isArray(parsed)) return parsed as Grupo[];
+      }
+    } catch {}
+    return [] as Grupo[];
+  });
+
+  useEffect(() => {
+    // Si recibimos id, consultamos al backend para obtener el perfil completo
+    const id = raw.id;
+    if (!id || !API) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API}/user/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const j = await res.json();
+        if (cancelled) return;
+        setNombre(j.nombre ?? nombre);
+        setApellido(j.apellido ?? "");
+        setTelefono(j.telefono ?? telefono ?? "—");
+        setFechaNacimiento(j.fechaNacimiento ?? fechaNacimiento ?? "—");
+        setDni(j.dni ?? dni ?? "—");
+        setApodo(j.apodo ?? "");
+        setAvatarUri(j.avatarUri || j.avatar || avatarUri);
+        if (Array.isArray(j.grupos)) setGrupos(j.grupos as Grupo[]);
+      } catch (e) {
+        console.error("friendProfile fetch error", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [raw.id, API]);
 
   
-  let grupos: Grupo[] = [];
-  try {
-    if (raw.grupos) {
-      const parsed = JSON.parse(String(raw.grupos));
-      if (Array.isArray(parsed)) {
-        grupos = parsed as Grupo[];
-      }
-    }
-  } catch {
-  }
+  
 
   const eliminarAmigo = () => {
+    //ACA DEBERIA ELIMINAR REALMENTE DE LA TRIBU
     alert(`Se eliminará a ${nombre} de tus amigos`);
   };
 
@@ -59,7 +92,13 @@ export default function PerfilAmigoScreen() {
         </Pressable>
         
         <View style={styles.avatarWrap}>
-          <Image source={{ uri: avatarUri }} style={styles.avatar} />
+          {loading ? (
+            <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center" }}>
+              <ActivityIndicator />
+            </View>
+          ) : (
+            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+          )}
         </View>
 
         

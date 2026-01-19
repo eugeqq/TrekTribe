@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Miembro = { id: string | number; nombre: string };
 type Grupo = {
@@ -38,6 +39,14 @@ export default function GrupoScreen() {
   const [data, setData] = useState<Grupo | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+
+  // Modal & search state for adding members (declared unconditionally to preserve hook order)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<any>>([]);
+  const [adding, setAdding] = useState(false);
+  const API = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
     let cancel = false;
@@ -123,6 +132,62 @@ export default function GrupoScreen() {
 
   const { nombre, ubicacion, descripcion, fechaInicio, fechaFin, miembros = [] } = data;
 
+  async function searchUsers() {
+    if (!API || !searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      console.log("Searching users with query:", searchQuery);
+      const res = await fetch(`${API}/user/email/${searchQuery}`);
+      console.log("searchUsers response:", res);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const j = await res.json();
+      console.log("searchUsers data:", j);
+      // Aceptar respuestas: array directo, objeto usuario, o { results: [] } / { data: [] }
+      let arr: any[] = [];
+      if (Array.isArray(j)) arr = j;
+      else if (Array.isArray(j.results)) arr = j.results;
+      else if (Array.isArray(j.data)) arr = j.data;
+      else if (j && typeof j === "object" && (j.id || j.email || j.nombre)) arr = [j];
+      setSearchResults(arr);
+    } catch (e) {
+      console.error("searchUsers error", e);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function addMember(user: any) {
+    if (!API || !idParam) return;
+    setAdding(true);
+    try {
+      const currentUserId = await AsyncStorage.getItem("userId");
+      const res = await fetch(`${API}/viajes/${idParam}/miembros`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentUserId: Number(currentUserId), userId: user.id }),
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || `Error ${res.status}`);
+      }
+      const created = await res.json().catch(() => ({}));
+      const newMember = { id: created.id ?? user.id, nombre: created.nombre ?? user.nombre };
+      setData((prev) => (prev ? { ...prev, miembros: [...(prev.miembros || []), newMember] } : prev));
+      setIsAddModalOpen(false);
+      setSearchQuery("");
+      setSearchResults([]);
+    } catch (e) {
+      console.error("addMember error", e);
+      Alert.alert("Error", "No se pudo agregar el miembro");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
 
@@ -144,6 +209,67 @@ export default function GrupoScreen() {
     }}
   />
         </View>
+        
+        {/* Modal: Agregar amigo */}
+        <Modal visible={isAddModalOpen} transparent animationType="slide" onRequestClose={() => setIsAddModalOpen(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={styles.modalTitle}>Agregar amigo</Text>
+                <Pressable onPress={() => setIsAddModalOpen(false)}>
+                  <Ionicons name="close" size={20} color="#111" />
+                </Pressable>
+              </View>
+
+              <TextInput
+                placeholder="Buscar por nombre o email"
+                placeholderTextColor="#6b746e"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+              />
+
+              <Pressable style={styles.searchBtn} onPress={() => searchUsers()} disabled={searching}>
+                <Text style={{ color: "#fff", fontWeight: "700" }}>{searching ? "Buscando..." : "Buscar"}</Text>
+              </Pressable>
+
+              <View style={{ marginTop: 12, maxHeight: 220 }}>
+                {searching ? (
+                  <View style={{ alignItems: "center" }}>
+                    <ActivityIndicator />
+                    <Text style={{ color: "#9aa49d", marginTop: 8 }}>Buscando…</Text>
+                  </View>
+                ) : searchResults.length === 0 ? (
+                  <Text style={{ color: "#333" }}>No hay resultados</Text>
+                ) : (
+                  searchResults.map((u: any) => (
+                    <Pressable
+                      key={String(u.id)}
+                      style={styles.searchRowPressable}
+                      onPress={() => {
+                        Alert.alert(
+                          "Agregar miembro",
+                          `${u.nombre || u.email || "Usuario"}\n${u.email ? u.email : ""}`,
+                          [
+                            { text: "Cancelar", style: "cancel" },
+                            { text: "Agregar", onPress: () => addMember(u) },
+                          ]
+                        );
+                      }}
+                      disabled={adding}
+                    >
+                      <View>
+                        <Text style={{ color: "#111", fontWeight: "700" }}>{u.nombre || u.email || "Usuario"}</Text>
+                        {u.email ? <Text style={{ color: "#444", fontSize: 13 }}>{u.email}</Text> : null}
+                      </View>
+                      <Text style={{ color: "#4B5320", fontWeight: "700" }}>{adding ? "..." : "Seleccionar"}</Text>
+                    </Pressable>
+                  ))
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.groupName}>{nombre ?? "Grupo"}</Text>
 
@@ -164,13 +290,17 @@ export default function GrupoScreen() {
                 onPress={() =>
                   router.push({
                     pathname: "/(stack)/friendProfile",
-                    params: { nombre: m.nombre },
+                    params: { id: String(m.id), nombre: m.nombre },
                   })
                 }
               >
                 <Text style={styles.memberName}>{m.nombre}</Text>
               </Pressable>
             ))}
+            {/* Botón para agregar miembro */}
+            <Pressable style={[styles.memberButton, styles.addMemberButton]} onPress={() => setIsAddModalOpen(true)}>
+              <Text style={[styles.memberName, { fontSize: 20 }]}>+</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -253,5 +383,38 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1f1b",
     borderWidth: 1,
     borderColor: "#2a322b",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 16,
+    justifyContent: "center",
+  },
+  modalCard: {
+    backgroundColor: "#eef7ee",
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: "#111" },
+  searchInput: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    color: "#111",
+  },
+  searchBtn: { backgroundColor: "#4B5320", padding: 10, borderRadius: 8, alignItems: "center", marginTop: 8 },
+  searchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8 },
+  addBtn: { backgroundColor: "#4B5320", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
+  addMemberButton: { backgroundColor: "#2a322b", borderStyle: "dashed", borderWidth: 1, borderColor: "#2a322b" },
+  searchRowPressable: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e6e6e0",
   },
 });
