@@ -140,7 +140,7 @@ export default function GrupoScreen() {
     setSearching(true);
     try {
       console.log("Searching users with query:", searchQuery);
-      const res = await fetch(`${API}/user/email/${searchQuery}`);
+      const res = await fetch(`${API}/user/email/${encodeURIComponent(searchQuery)}`);
       console.log("searchUsers response:", res);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const j = await res.json();
@@ -154,6 +154,11 @@ export default function GrupoScreen() {
       setSearchResults(arr);
     } catch (e) {
       console.error("searchUsers error", e);
+      if (e instanceof Error && e.message.includes("400")) {
+        Alert.alert("Error", "Ingresa un email válido");
+      } else {
+        Alert.alert("Error", "No se pudieron buscar usuarios");
+      }
       setSearchResults([]);
     } finally {
       setSearching(false);
@@ -168,7 +173,7 @@ export default function GrupoScreen() {
       const res = await fetch(`${API}/viajes/${idParam}/miembros`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentUserId: Number(currentUserId), userId: user.id }),
+        body: JSON.stringify({ currentUserId: Number(currentUserId), usuarioId: user.id }),
       });
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
@@ -222,7 +227,7 @@ export default function GrupoScreen() {
               </View>
 
               <TextInput
-                placeholder="Buscar por nombre o email"
+                placeholder="Buscar por email"
                 placeholderTextColor="#6b746e"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
