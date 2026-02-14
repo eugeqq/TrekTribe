@@ -1,14 +1,16 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { authService } from "../../lib/auth";
+import { useAuth } from "../../lib/authContext";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState(""); 
   const router = useRouter();
+  const { refresh } = useAuth();
 
   const onLogin = async () => {
     setErrorMessage("");  
@@ -31,7 +33,20 @@ export default function LoginScreen() {
         setErrorMessage("Email o contraseña incorrectos");
         return;
       }
-      await AsyncStorage.setItem("userId", data.id.toString());
+      
+      // Guardar sesión con JWT token
+      await authService.saveSession({
+        id: data.id.toString(),
+        email: email,
+        token: data.token,
+        nombre: data.nombre,
+        apellido: data.apellido,
+      });
+      console.log("[LOGIN] session after save:", await authService.getSession());
+      
+      // Refrescar el contexto para que detecte la nueva sesión
+      await refresh();
+      
       router.replace("/(tabs)/tribes");
     } catch (error) {
       console.error(error);

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import DateField from "../../components/DateField";
 import EditableRow from "../../components/EditableRow";
+import { useAuth } from "../../lib/authContext";
 
 type Profile = {
   nombre: string;
@@ -33,7 +34,9 @@ const KEYBOARD: Partial<Record<FieldKey, "default" | "numeric" | "email-address"
 };
 
 export default function PerfilScreen() {
-  
+  const { logout } = useAuth();
+
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const [data, setData] = useState<Profile>({
     nombre: "",
@@ -232,6 +235,23 @@ export default function PerfilScreen() {
           showEditLabel
         />
         <EditableRow label={LABELS.dni} value={data.dni} onPress={() => onEdit("dni")} />
+
+        <Pressable
+          style={[styles.btn, styles.btnLogout, loggingOut && styles.btnDisabled]}
+          onPress={async () => {
+            try {
+              setLoggingOut(true);
+              await logout();
+            } catch (e) {
+              console.error("Error al cerrar sesión:", e);
+            } finally {
+              setLoggingOut(false);
+            }
+          }}
+          disabled={loggingOut}
+        >
+          <Text style={styles.btnLogoutText}>{loggingOut ? "Cerrando sesión..." : "Cerrar sesión"}</Text>
+        </Pressable>
       </ScrollView>
 
       
@@ -282,6 +302,18 @@ const styles = StyleSheet.create({
     color: "#e8eee9",
     fontSize: 16,
   },
+  btnLogout: {
+    backgroundColor: "#ff3b30",
+    marginTop: 20,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    width: "100%",
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 12,
+  },
+  btnLogoutText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  btnDisabled: { opacity: 0.6 },
   modalActions: { flexDirection: "row", gap: 12, justifyContent: "flex-end", marginTop: 16 },
   btn: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16 },
   btnGhost: { borderWidth: 1, borderColor: "#2a322b" },
