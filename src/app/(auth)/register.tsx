@@ -14,11 +14,56 @@ export default function RegisterScreen() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
 
+  // Estados para validación en tiempo real
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
+  const [passwordValid, setPasswordValid] = useState<boolean | null>(null);
+
+  // Funciones de validación en tiempo real
+  const validateEmail = (emailValue: string) => {
+    if (emailValue.trim() === "") {
+      setEmailValid(null);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setEmailValid(emailRegex.test(emailValue.trim()));
+  };
+
+  const validatePassword = (passwordValue: string) => {
+    if (passwordValue === "") {
+      setPasswordValid(null);
+      return;
+    }
+    setPasswordValid(passwordValue.length >= 8);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    validateEmail(value);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    validatePassword(value);
+  };
+
   const onRegister = async () => {
-    setErrorMessage("");  
+    setErrorMessage("");
 
     if (!nombre || !apellido || !email || !password || !confirmPassword) {
-      setErrorMessage("Porfavor complete todos los campos requeridos.");
+      setErrorMessage("Por favor complete todos los campos requeridos.");
+      return;
+    }
+
+    // ✅ Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMessage("Por favor ingresa un email válido.");
+      return;
+    }
+
+    // ✅ Validación de longitud mínima de contraseña
+    if (password.length < 8) {
+      setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
@@ -105,24 +150,52 @@ export default function RegisterScreen() {
             style={styles.input}
           />
 
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor="#9aa49d"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={email}
+              onChangeText={handleEmailChange}
+              placeholder="Email"
+              placeholderTextColor="#9aa49d"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={[
+                styles.input,
+                emailValid === true && styles.inputValid,
+                emailValid === false && styles.inputInvalid
+              ]}
+            />
+            {emailValid !== null && (
+              <Text style={[
+                styles.validationText,
+                emailValid ? styles.textValid : styles.textInvalid
+              ]}>
+                {emailValid ? "✓ Email válido" : "✗ Email inválido"}
+              </Text>
+            )}
+          </View>
 
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Contraseña"
-            placeholderTextColor="#9aa49d"
-            secureTextEntry
-            style={styles.input}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={password}
+              onChangeText={handlePasswordChange}
+              placeholder="Contraseña (mínimo 8 caracteres)"
+              placeholderTextColor="#9aa49d"
+              secureTextEntry
+              style={[
+                styles.input,
+                passwordValid === true && styles.inputValid,
+                passwordValid === false && styles.inputInvalid
+              ]}
+            />
+            {passwordValid !== null && (
+              <Text style={[
+                styles.validationText,
+                passwordValid ? styles.textValid : styles.textInvalid
+              ]}>
+                {passwordValid ? "✓ Contraseña segura" : "✗ Mínimo 8 caracteres"}
+              </Text>
+            )}
+          </View>
 
           <TextInput
             value={confirmPassword}
@@ -212,5 +285,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === "ios" ? 30 : 0,
+  },
+  inputContainer: {
+    gap: 4,
+  },
+  inputValid: {
+    borderColor: "#2f7037", // Verde para válido
+  },
+  inputInvalid: {
+    borderColor: "#aa2b2b", // Rojo para inválido
+  },
+  validationText: {
+    fontSize: 12,
+    fontWeight: "500",
+    paddingHorizontal: 4,
+  },
+  textValid: {
+    color: "#4ade80", // Verde claro
+  },
+  textInvalid: {
+    color: "#ff9e9e", // Rojo claro
   },
 });

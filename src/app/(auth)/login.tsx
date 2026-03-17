@@ -8,15 +8,20 @@ import { useAuth } from "../../lib/authContext";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState(""); 
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { refresh } = useAuth();
 
   const onLogin = async () => {
-    setErrorMessage("");  
+    setErrorMessage("");
+    setIsBlocked(false);
+    setLoading(true);
 
     if (!email || !password) {
       setErrorMessage("Por favor, completa todos los campos");
+      setLoading(false);
       return;
     }
 
@@ -27,13 +32,36 @@ export default function LoginScreen() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      let errorMessage = "";
+
+      // Intentar parsear como JSON primero
+      try {
+        data = await response.json();
+        errorMessage = data.error || data.message || "";
+      } catch (jsonError) {
+        // Si no es JSON, intentar leer como texto plano (para rate limiter)
+        try {
+          const textResponse = await response.text();
+          errorMessage = textResponse;
+        } catch (textError) {
+          errorMessage = `Error ${response.status}`;
+        }
+      }
 
       if (!response.ok) {
-        setErrorMessage("Email o contraseña incorrectos");
+        // Verificar si es el mensaje de bloqueo por demasiados intentos
+        if (errorMessage.includes("Demasiados intentos de login") ||
+            response.status === 429) {
+          setIsBlocked(true);
+          setErrorMessage("Demasiados intentos de login. Inténtalo de nuevo en 15 minutos.");
+        } else {
+          setErrorMessage(errorMessage || "Email o contraseña incorrectos");
+        }
+        setLoading(false);
         return;
       }
-      
+
       // Guardar sesión con JWT token
       await authService.saveSession({
         id: data.id.toString(),
@@ -43,14 +71,16 @@ export default function LoginScreen() {
         apellido: data.apellido,
       });
       console.log("[LOGIN] session after save:", await authService.getSession());
-      
+
       // Refrescar el contexto para que detecte la nueva sesión
       await refresh();
-      
+
       router.replace("/(tabs)/tribes");
     } catch (error) {
-      console.error(error);
+      console.error("Login error:", error);
       setErrorMessage("No se pudo conectar con el servidor");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,8 +96,15 @@ export default function LoginScreen() {
 
         
         {errorMessage ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{errorMessage}</Text>
+          <View style={[styles.errorBox, isBlocked && styles.blockedBox]}>
+            <Text style={[styles.errorText, isBlocked && styles.blockedText]}>
+              {errorMessage}
+            </Text>
+            {isBlocked && (
+              <Text style={styles.blockedSubtext}>
+                ⏱️ Espera 15 minutos antes de intentar nuevamente
+              </Text>
+            )}
           </View>
         ) : null}
 
@@ -78,7 +115,8 @@ export default function LoginScreen() {
           placeholderTextColor="#9aa49d"
           keyboardType="email-address"
           autoCapitalize="none"
-          style={styles.input}
+          style={[styles.input, isBlocked && styles.inputDisabled]}
+          editable={!isBlocked && !loading}
         />
 
         <TextInput
@@ -87,11 +125,18 @@ export default function LoginScreen() {
           placeholder="Contraseña"
           placeholderTextColor="#9aa49d"
           secureTextEntry
-          style={styles.input}
+          style={[styles.input, isBlocked && styles.inputDisabled]}
+          editable={!isBlocked && !loading}
         />
 
-        <Pressable style={styles.btnPrimary} onPress={onLogin}>
-          <Text style={styles.btnPrimaryText}>Ingresar</Text>
+        <Pressable
+          style={[styles.btnPrimary, (isBlocked || loading) && styles.btnDisabled]}
+          onPress={onLogin}
+          disabled={isBlocked || loading}
+        >
+          <Text style={[styles.btnPrimaryText, (isBlocked || loading) && styles.btnDisabledText]}>
+            {loading ? "Cargando..." : isBlocked ? "Cuenta bloqueada" : "Ingresar"}
+          </Text>
         </Pressable>
 
         <Pressable style={styles.btnSecondary} onPress={createAccount}>
@@ -159,4 +204,31 @@ const styles = StyleSheet.create({
     borderColor: "#aa2b2b",
   },
   errorText: { color: "#ff9e9e", textAlign: "center", fontWeight: "600" },
+  blockedBox: {
+    backgroundColor: "#403018", // Color más oscuro para bloqueo
+    borderColor: "#cc6b2b", // Color naranja para bloqueo
+  },
+  blockedText: {
+    color: "#ffb366", // Color naranja más claro
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  blockedSubtext: {
+    color: "#cc9e66",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  inputDisabled: {
+    opacity: 0.5,
+    backgroundColor: "#151915",
+  },
+  btnDisabled: {
+    backgroundColor: "#2a322b",
+    opacity: 0.6,
+  },
+  btnDisabledText: {
+    color: "#666",
+  },
 });
