@@ -8,6 +8,7 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -109,6 +110,16 @@ function isoToDdmmyyyy(iso: string): string {
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
+// Abre la ubicación (texto libre: nombre de lugar, dirección, etc.) en
+// Google Maps usando el formato de búsqueda oficial de la Maps URL API.
+function openInMaps(ubicacion: string) {
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ubicacion)}`;
+  Linking.openURL(url).catch((err) => {
+    console.error("No se pudo abrir Google Maps:", err);
+    Alert.alert("Error", "No se pudo abrir Google Maps.");
+  });
+}
+
 export default function ItineraryScreen() {
   
   const router = useRouter();
@@ -148,7 +159,7 @@ export default function ItineraryScreen() {
         description: a.descripcion ?? "",    // 👈 descripcion
         dateTime: a.fechaHora ?? "",         // 👈 fechaHora (ISO)
         category: "",                        // 👈 no existe en modelo
-        location: "",                        // 👈 no existe en modelo
+        location: a.ubicacion ?? "",
         }));
         setActivities(rows);
 
@@ -238,6 +249,7 @@ export default function ItineraryScreen() {
       const payload = {
         titulo: selectedActivity.title?.trim(),
         descripcion: selectedActivity.description?.trim() || null,
+        ubicacion: selectedActivity.location?.trim() || null,
         fechaHora: normalizeDate(selectedActivity.dateTime),
       };
   
@@ -265,7 +277,7 @@ export default function ItineraryScreen() {
             description: created.descripcion ?? payload.descripcion ?? "",
             dateTime: created.fechaHora ?? payload.fechaHora,
             category: "",
-            location: "",
+            location: created.ubicacion ?? payload.ubicacion ?? "",
           };
           setActivities((prev) => [createdRow, ...prev]);
         }
@@ -296,6 +308,7 @@ export default function ItineraryScreen() {
                     title: updated.titulo ?? x.title,
                     description: updated.descripcion ?? x.description,
                     dateTime: updated.fechaHora ?? x.dateTime,
+                    location: updated.ubicacion ?? payload.ubicacion ?? x.location,
                   }
                 : x
             )
@@ -445,10 +458,17 @@ renderItem={({ item }) => (
           </View>
   
           {item.location ? (
-            <View style={styles.row}>
-              <Ionicons name="location-outline" size={16} color={C.muted} />
-              <Text style={styles.rowText}>{item.location}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => openInMaps(item.location!)}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              activeOpacity={0.6}
+              accessibilityRole="link"
+              accessibilityLabel={`Abrir ${item.location} en Google Maps`}
+            >
+              <Ionicons name="location-outline" size={16} color={C.accent} />
+              <Text style={[styles.rowText, styles.mapsLink]}>{item.location}</Text>
+            </TouchableOpacity>
           ) : null}
   
           {item.category ? (
@@ -660,6 +680,7 @@ const styles = StyleSheet.create({
   taskTitle: { fontSize: 16, fontWeight: "700", color: C.text, marginBottom: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   rowText: { fontSize: 13, color: C.muted },
+  mapsLink: { color: C.accent, textDecorationLine: "underline" },
   chips: { marginTop: 8, flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: {
     backgroundColor: "#233027",

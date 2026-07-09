@@ -92,9 +92,10 @@ export default function PerfilScreen() {
     });
 
     // Enviar al backend
+    // OJO: no seteamos "Content-Type" a mano — fetch arma el boundary
+    // correcto de multipart/form-data solo cuando el body es un FormData.
     const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: formData,
     });
 

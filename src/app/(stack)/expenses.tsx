@@ -28,6 +28,12 @@ type Expense = {
   participants: string[];
   category?: string | null;
 };
+type Settlement = {
+  id: string;
+  monto: number;
+  pagadorId: string;
+  receptorId: string;
+};
 type Miembro = { id: string | number; nombre: string };
 
 type Grupo = {
@@ -80,7 +86,12 @@ const toDDMMYYYY = (val?: string | number | Date | null) => {
 };
 
 /* Helper: calcula balances — ahora recibe userId dinámico */
-function calculateBalances(expenses: Expense[], allParticipants: Participant[], userId: string | null): Record<string, number> {
+function calculateBalances(
+  expenses: Expense[],
+  allParticipants: Participant[],
+  userId: string | null,
+  settlements: Settlement[] = []
+): Record<string, number> {
   const balances: Record<string, number> = {};
   allParticipants.forEach((p) => {
     balances[p.id] = 0;
@@ -105,6 +116,21 @@ function calculateBalances(expenses: Expense[], allParticipants: Participant[], 
       const payer = expense.payerId;
       balances[payer] = (balances[payer] || 0) - perHead;
     }
+  });
+
+  // Aplicamos los pagos ya registrados (Settlements) para descontar deuda saldada.
+  // balances[otroId] > 0  => otroId le debe al usuario logueado
+  // balances[otroId] < 0  => el usuario logueado le debe a otroId
+  settlements.forEach((s) => {
+    if (s.pagadorId === userId) {
+      // El usuario le pagó a s.receptorId: se cancela (parte de) lo que le debía.
+      balances[s.receptorId] = (balances[s.receptorId] || 0) + s.monto;
+    } else if (s.receptorId === userId) {
+      // s.pagadorId le pagó al usuario: se cancela (parte de) lo que le debían.
+      balances[s.pagadorId] = (balances[s.pagadorId] || 0) - s.monto;
+    }
+    // Si ninguno de los dos es el usuario logueado, no afecta esta vista
+    // (los saldos que se muestran son siempre relativos al usuario actual).
   });
 
   return balances;
@@ -203,10 +229,12 @@ export default function ExpensesScreen({ route }: any) {
   const [draftSelected, setDraftSelected] = useState<string[]>([]);
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
 
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [settlePayeeId, setSettlePayeeId] = useState("");
   const [settlePayerId, setSettlePayerId] = useState("");
   const [settleAmount, setSettleAmount] = useState("");
+  const [savingSettlement, setSavingSettlement] = useState(false);
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -230,11 +258,13 @@ export default function ExpensesScreen({ route }: any) {
         setViajeData(parsedGrupo);
         viajeId = parsedGrupo.id;
 
-        // Inicializar participantes desde params
-        setParticipants(parsedGrupo.miembros.map((m) => ({
-          id: String(m.id),
-          name: m.nombre,
-        })));
+        // OJO: antes acá se armaban participantes "provisorios" a partir de
+        // parsedGrupo.miembros, mezclando el id de la fila MiembroViaje con
+        // el id de usuario según el caso, y sin el nombre real. Eso podía
+        // terminar en ids duplicados/undefined entre esta lista provisoria
+        // y la que trae fetchTripData después. Ahora esperamos directamente
+        // a fetchTripData (que usa /viajes/:id/participantes, la fuente
+        // confiable) para no tener dos versiones de la lista compitiendo.
       } catch (e) {
         console.warn("Error parsing grupo param:", e);
       }
@@ -252,23 +282,31 @@ export default function ExpensesScreen({ route }: any) {
   const fetchTripData = async (tripId: number) => {
     try {
       setLoading(true);
-      const [detalleRes, expRes] = await Promise.all([
+      // Usamos /viajes/:id/participantes en vez de armar la lista a mano
+      // desde el .miembros de /viajes/detalle/:id: ese endpoint dedicado ya
+      // devuelve el id real del usuario y el nombre completo, sin mezclar
+      // el id de la fila pivote (MiembroViaje) con el id de usuario.
+      const [detalleRes, expRes, partRes, settleRes] = await Promise.all([
         fetch(`${API_URL}/viajes/detalle/${tripId}`),
         fetch(`${API_URL}/viajes/${tripId}/gastos`),
+        fetch(`${API_URL}/viajes/${tripId}/participantes`),
+        fetch(`${API_URL}/viajes/${tripId}/settlements`),
       ]);
 
       if (!detalleRes.ok) throw new Error("Error al obtener detalle del viaje");
       if (!expRes.ok) throw new Error("Error al obtener gastos");
+      if (!partRes.ok) throw new Error("Error al obtener participantes");
+      if (!settleRes.ok) throw new Error("Error al obtener los pagos del viaje");
 
       const detalleData = await detalleRes.json();
       const expData = await expRes.json();
+      const partData = await partRes.json();
+      const settleData = await settleRes.json();
 
-      const participantesAdaptados = detalleData.miembros.map((m: any) => ({
-        id: String(m.usuario?.id ?? m.usuarioId),  // ID del miembro (no del usuario)
-        miembroId: String(m.id),  
-        name: `${m.usuario?.nombre ?? ""} ${m.usuario?.apellido ?? ""}`.trim(),
-        avatar: m.usuario?.avatarUri ?? null,
-        rol: m.rol,
+      const participantesAdaptados: Participant[] = (Array.isArray(partData) ? partData : []).map((p: any) => ({
+        id: String(p.id),
+        name: p.name || `Usuario ${p.id}`,
+        avatar: p.avatar ?? null,
       }));
 
       setParticipants(participantesAdaptados);
@@ -284,7 +322,16 @@ export default function ExpensesScreen({ route }: any) {
       }));
 
       setExpenses(gastosAdaptados);
-      
+
+      const settlementsAdaptados: Settlement[] = (Array.isArray(settleData) ? settleData : []).map((s: any) => ({
+        id: String(s.id),
+        monto: Number(s.monto),
+        pagadorId: String(s.pagadorId),
+        receptorId: String(s.receptorId),
+      }));
+
+      setSettlements(settlementsAdaptados);
+
 
     } catch (error) {
       console.error("Error fetchTripData:", error);
@@ -296,7 +343,9 @@ export default function ExpensesScreen({ route }: any) {
   useEffect(() => {
     if (participants.length > 0) {
       // si no hay aún draftPayer, inicializar con el primero
-      setDraftPayer((prev) => prev ?? String(participants[0].id));
+      // (ojo: draftPayer arranca en "" (string vacío), no en null/undefined,
+      // así que hay que chequear vacío explícitamente en vez de usar ??)
+      setDraftPayer((prev) => (prev ? prev : String(participants[0].id)));
       // seleccionar todos por defecto
       setDraftSelected(participants.map((p) => String(p.id)));
     }
@@ -304,7 +353,10 @@ export default function ExpensesScreen({ route }: any) {
 
   const participantsById = useMemo(() => Object.fromEntries(participants.map((p) => [p.id, p] as const)), [participants]);
   const totalExpenses = useMemo(() => expenses.reduce((acc, e) => acc + Number(e.amount), 0), [expenses]);
-  const balances = useMemo(() => calculateBalances(expenses, participants, userId), [expenses, participants, userId]);
+  const balances = useMemo(
+    () => calculateBalances(expenses, participants, userId, settlements),
+    [expenses, participants, userId, settlements]
+  );
 
   const onEditExpense = (expenseId: string) => {
     const ex = expenses.find((e) => e.id === expenseId);
@@ -333,14 +385,35 @@ export default function ExpensesScreen({ route }: any) {
       Alert.alert("Error", "Completá descripción, monto y pagador.");
       return;
     }
+
+    // Validación defensiva: si algo dio NaN acá, JSON.stringify lo manda como
+    // `null` sin avisar y el backend lo rechaza sin decir por qué. Cortamos acá
+    // con un mensaje claro en vez de mandar el pedido igual.
+    const montoNum = Number(draftAmount);
+    const payerNum = Number(draftPayer);
+    const participantesNum = draftSelected.map((id) => Number(id));
+
+    if (Number.isNaN(montoNum)) {
+      Alert.alert("Error", "El monto ingresado no es un número válido.");
+      return;
+    }
+    if (Number.isNaN(payerNum)) {
+      Alert.alert("Error", "Elegí quién pagó el gasto (tocá uno de los nombres).");
+      return;
+    }
+    if (participantesNum.length === 0 || participantesNum.some(Number.isNaN)) {
+      Alert.alert("Error", "Seleccioná al menos un participante válido.");
+      return;
+    }
+
     try {
       const payload = {
         descripcion: draftTitle,
-        monto: Number(draftAmount),
+        monto: montoNum,
         categoria: null,
-        pagadoPorId: Number(draftPayer),
+        pagadoPorId: payerNum,
         viajeId: Number(viajeId),
-        participantes: draftSelected.map(id => Number(id)), 
+        participantes: participantesNum,
       };
 
       const url = editExpenseId ? `${API_URL}/gastos/${editExpenseId}` : `${API_URL}/gastos`;
@@ -380,8 +453,55 @@ export default function ExpensesScreen({ route }: any) {
   
   };
 
+  const closeSettleModal = () => {
+    setIsSettleModalOpen(false);
+    setSettlePayerId("");
+    setSettlePayeeId("");
+    setSettleAmount("");
+  };
+
   const onConfirmSettle = async () => {
-    Alert.alert("Saldar", "Esta acción requiere endpoint /settlements en backend.");
+    const montoNum = Number(settleAmount);
+
+    if (!settlePayerId || !settlePayeeId) {
+      Alert.alert("Error", "Elegí quién paga y quién recibe.");
+      return;
+    }
+    if (settlePayerId === settlePayeeId) {
+      Alert.alert("Error", "Quién paga y quién recibe no pueden ser la misma persona.");
+      return;
+    }
+    if (!settleAmount || Number.isNaN(montoNum) || montoNum <= 0) {
+      Alert.alert("Error", "Ingresá un monto válido.");
+      return;
+    }
+
+    setSavingSettlement(true);
+    try {
+      const res = await fetch(`${API_URL}/viajes/${viajeId}/settlements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pagadorId: Number(settlePayerId),
+          receptorId: Number(settlePayeeId),
+          monto: montoNum,
+        }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || "Error al registrar el pago");
+      }
+
+      await fetchTripData(viajeId);
+      closeSettleModal();
+      Alert.alert("Listo", "El pago se registró y los saldos se actualizaron.");
+    } catch (error) {
+      console.error("Error onConfirmSettle:", error);
+      Alert.alert("Error", "No se pudo registrar el pago.");
+    } finally {
+      setSavingSettlement(false);
+    }
   };
 
   return (
@@ -409,17 +529,6 @@ export default function ExpensesScreen({ route }: any) {
             </View>
   
             <Text style={styles.title}>Gastos del grupo</Text>
-  
-            <Pressable
-              style={[styles.card, { marginTop: 16 }]}
-              onPress={() => console.log("Ir a detalles del viaje")}
-            >
-              {/* ...todo lo de info general... */}
-            </Pressable>
-  
-            <View style={styles.card}>
-              {/* ...Resumen... */}
-            </View>
   
             <BalanceSummary
               balances={balances}
@@ -530,12 +639,12 @@ export default function ExpensesScreen({ route }: any) {
       </Modal>
 
       {/* Modal saldar (simple) */}
-      <Modal visible={isSettleModalOpen} animationType="slide" transparent onRequestClose={() => setIsSettleModalOpen(false)}>
+      <Modal visible={isSettleModalOpen} animationType="slide" transparent onRequestClose={closeSettleModal}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Saldar Deuda</Text>
-              <Pressable onPress={() => setIsSettleModalOpen(false)}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
+              <Pressable onPress={closeSettleModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
             </View>
 
             <ScrollView contentContainerStyle={{ gap: 12 }}>
@@ -560,8 +669,14 @@ export default function ExpensesScreen({ route }: any) {
               <Text style={styles.label}>Monto</Text>
               <TextInput value={settleAmount} onChangeText={setSettleAmount} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#6b746e" style={styles.input} />
 
-              <Pressable style={[styles.primaryBtn, { marginTop: 8 }]} onPress={onConfirmSettle}>
-                <Text style={styles.primaryBtnText}>Confirmar Pago</Text>
+              <Pressable
+                style={[styles.primaryBtn, { marginTop: 8 }, savingSettlement && { opacity: 0.7 }]}
+                onPress={onConfirmSettle}
+                disabled={savingSettlement}
+              >
+                <Text style={styles.primaryBtnText}>
+                  {savingSettlement ? "Guardando..." : "Confirmar Pago"}
+                </Text>
               </Pressable>
             </ScrollView>
           </View>

@@ -1,17 +1,58 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useRef, useState } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 
 const COLORS = {
-  bg: "#0F1310",        
-  surface: "#1a1f1b",   
-  border: "#2a322b",    
-  text: "#e8eee9",      
-  subtext: "#9aa49d",   
-  accent: "#9ec39f",    
+  bg: "#0F1310",
+  surface: "#1a1f1b",
+  border: "#2a322b",
+  text: "#e8eee9",
+  subtext: "#9aa49d",
+  accent: "#9ec39f",
 };
 
+// Cada cuánto se fija si hay algún chat sin leer, para pintar el puntito
+// azul sobre el ícono de la pestaña "Chats" (sin depender de estar parado
+// en esa pantalla).
+const UNREAD_POLL_INTERVAL_MS = 4000;
+
 export default function TabsLayout() {
+  const [hasUnreadChats, setHasUnreadChats] = useState(false);
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    const checkUnread = async () => {
+      try {
+        const uid = await AsyncStorage.getItem("userId");
+        if (!uid || !API_URL) {
+          if (!cancelado) setHasUnreadChats(false);
+          return;
+        }
+        const res = await fetch(`${API_URL}/chats/usuario/${uid}`);
+        const data = await res.json();
+        if (!cancelado) {
+          setHasUnreadChats(Array.isArray(data) && data.some((c: any) => c.noLeido));
+        }
+      } catch (error) {
+        // Silencioso: no queremos romper la barra de pestañas por un error de red.
+      }
+    };
+
+    checkUnread();
+    pollRef.current = setInterval(checkUnread, UNREAD_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelado = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+  }, [API_URL]);
+
   return (
     <Tabs
       initialRouteName="tribes"
@@ -34,6 +75,22 @@ export default function TabsLayout() {
               color={color}
               size={size}
             />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chats"
+        options={{
+          title: "Chats",
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={styles.tabIconWrap}>
+              <Ionicons
+                name={focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+                color={color}
+                size={size}
+              />
+              {hasUnreadChats && <View style={styles.tabUnreadDot} />}
+            </View>
           ),
         }}
       />
@@ -71,5 +128,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginTop: 2,
+  },
+  tabIconWrap: {
+    position: "relative",
+  },
+  tabUnreadDot: {
+    position: "absolute",
+    top: -3,
+    right: -6,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: "#3B82F6",
+    borderWidth: 1.5,
+    borderColor: COLORS.bg,
   },
 });
