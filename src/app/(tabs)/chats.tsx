@@ -35,10 +35,19 @@ type ChatPreview = {
   noLeido?: boolean;
 };
 
+type TribeChatPreview = {
+  viajeId: string;
+  nombre: string;
+  imagenUrl?: string | null;
+  ultimoMensaje: { contenido: string; enviadoEn: string; usuarioId: string; usuarioNombre: string } | null;
+  noLeido?: boolean;
+};
+
 export default function ChatsScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [tribeChats, setTribeChats] = useState<TribeChatPreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -55,14 +64,23 @@ export default function ChatsScreen() {
         setUserId(uid);
         if (!uid) {
           setChats([]);
+          setTribeChats([]);
           return;
         }
-        const res = await fetch(`${API_URL}/chats/usuario/${uid}`);
-        const data = await res.json();
+        const [chatsRes, tribeChatsRes] = await Promise.all([
+          fetch(`${API_URL}/chats/usuario/${uid}`),
+          fetch(`${API_URL}/viajes/usuario/${uid}/chats`),
+        ]);
+        const data = await chatsRes.json();
+        const tribeData = await tribeChatsRes.json();
         setChats(Array.isArray(data) ? data : []);
+        setTribeChats(Array.isArray(tribeData) ? tribeData : []);
       } catch (error) {
         console.error("Error al cargar chats:", error);
-        if (!silencioso) setChats([]);
+        if (!silencioso) {
+          setChats([]);
+          setTribeChats([]);
+        }
       } finally {
         if (!silencioso) setLoading(false);
       }
@@ -93,6 +111,13 @@ export default function ChatsScreen() {
     router.push({
       pathname: "/(stack)/chatConversation",
       params: { chatId: chat.id, otroNombre: chat.otroUsuario.nombre, otroUsuarioId: chat.otroUsuario.id },
+    });
+  };
+
+  const openTribeChat = (tribeChat: TribeChatPreview) => {
+    router.push({
+      pathname: "/(stack)/tribeChat",
+      params: { viajeId: tribeChat.viajeId, nombre: tribeChat.nombre },
     });
   };
 
@@ -164,6 +189,36 @@ export default function ChatsScreen() {
             <Text style={styles.btnPrimaryText}>Nuevo chat</Text>
           </Pressable>
         </View>
+
+        {tribeChats.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Tus tribus</Text>
+            {tribeChats.map((tc) => (
+              <Pressable key={`tribe-${tc.viajeId}`} style={styles.chatCard} onPress={() => openTribeChat(tc)}>
+                <View style={styles.iconCircleWrap}>
+                  <View style={styles.iconCircle}>
+                    <Ionicons name="people-outline" size={24} color={C.accent} />
+                  </View>
+                  {tc.noLeido && <View style={styles.unreadDot} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.chatNombre, tc.noLeido && styles.chatNombreNoLeido]}>{tc.nombre}</Text>
+                  <Text
+                    style={[styles.chatPreview, tc.noLeido && styles.chatPreviewNoLeido]}
+                    numberOfLines={1}
+                  >
+                    {tc.ultimoMensaje
+                      ? `${tc.ultimoMensaje.usuarioNombre}: ${tc.ultimoMensaje.contenido}`
+                      : "Todavía no hay mensajes"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={C.muted} />
+              </Pressable>
+            ))}
+          </>
+        )}
+
+        <Text style={styles.sectionTitle}>Chats individuales</Text>
 
         {chats.map((chat) => (
           <Pressable key={chat.id} style={styles.chatCard} onPress={() => openChat(chat)}>
@@ -255,6 +310,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   btnPrimaryText: { color: "white", fontWeight: "700", fontSize: 14 },
+  sectionTitle: {
+    color: C.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginTop: 8,
+    marginBottom: 2,
+  },
   chatCard: {
     width: "100%",
     backgroundColor: C.card,

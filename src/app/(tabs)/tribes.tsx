@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "react-native";
 
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 type Grupo = {
@@ -16,41 +16,66 @@ type Grupo = {
   imagenUrl?: string;
 };
 
+// Cada cuánto se refresca sola la lista de tribus mientras la pestaña está
+// abierta, para que aparezcan sin demora las tribus a las que te acaban de
+// agregar como miembro (antes solo se cargaba una vez, al montar la pantalla).
+const POLL_INTERVAL_MS = 5000;
+
 export default function GruposScreen() {
   const router = useRouter();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    const fetchGrupos = async () => {
-      try {
-        const userId = await AsyncStorage.getItem("userId");
-        if (!userId) return setGrupos([]);
-
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`);
-        const data = await res.json();
-
-        const normalizados: Grupo[] = (Array.isArray(data) ? data : []).map((v: any) => ({
-          id: Number(v.id),
-          nombre: v.nombre ?? "Sin nombre",
-          ubicacion: v.ubicacion ?? "—",
-          miembrosCant: Array.isArray(v.miembros) ? v.miembros.length : v.miembrosCant ?? 0,
-          descripcion: v.descripcion ?? "",
-          fechaInicio: v.fechaInicio ?? null,
-          fechaFin: v.fechaFin ?? null,
-          imagenUrl: v.imagenUrl ?? null,
-        }));
-        setGrupos(normalizados);
-      } catch (error) {
-        console.error("Error al cargar grupos:", error);
-        setGrupos([]);
-      } finally {
-        setLoading(false);
+  const fetchGrupos = useCallback(async (silencioso = false) => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        if (!silencioso) setGrupos([]);
+        return;
       }
-    };
-    fetchGrupos();
+
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`);
+      const data = await res.json();
+
+      const normalizados: Grupo[] = (Array.isArray(data) ? data : []).map((v: any) => ({
+        id: Number(v.id),
+        nombre: v.nombre ?? "Sin nombre",
+        ubicacion: v.ubicacion ?? "—",
+        miembrosCant: Array.isArray(v.miembros) ? v.miembros.length : v.miembrosCant ?? 0,
+        descripcion: v.descripcion ?? "",
+        fechaInicio: v.fechaInicio ?? null,
+        fechaFin: v.fechaFin ?? null,
+        imagenUrl: v.imagenUrl ?? null,
+      }));
+      setGrupos(normalizados);
+    } catch (error) {
+      console.error("Error al cargar grupos:", error);
+      if (!silencioso) setGrupos([]);
+    } finally {
+      if (!silencioso) setLoading(false);
+    }
   }, []);
+
+  // Recarga al entrar a la pestaña y sigue refrescando sola cada pocos
+  // segundos mientras la tenés abierta (mismo patrón que la pestaña Chats),
+  // así una tribu nueva (agregado como miembro por otra persona) aparece
+  // sin tener que cerrar y reabrir la app.
+  useFocusEffect(
+    useCallback(() => {
+      fetchGrupos(false);
+
+      pollRef.current = setInterval(() => {
+        fetchGrupos(true);
+      }, POLL_INTERVAL_MS);
+
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+      };
+    }, [fetchGrupos])
+  );
 
   const gruposFiltrados = grupos.filter((g) => (g.nombre ?? "").toLowerCase().includes(busqueda.toLowerCase()));
   const crearGrupo = () => router.push("/(stack)/createTribe");

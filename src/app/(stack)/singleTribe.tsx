@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Link, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { Link, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+
+// Cada cuánto se fija si hay mensajes sin leer en el chat grupal del viaje,
+// mientras esta pantalla está en foco.
+const CHAT_ESTADO_POLL_MS = 4000;
 
 type Miembro = { id: string | number; nombre: string };
 type Grupo = {
@@ -46,7 +50,9 @@ export default function GrupoScreen() {
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Array<any>>([]);
   const [adding, setAdding] = useState(false);
+  const [chatNoLeido, setChatNoLeido] = useState(false);
   const API = process.env.EXPO_PUBLIC_API_URL;
+  const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -107,6 +113,38 @@ export default function GrupoScreen() {
       cancel = true;
     };
   }, [idParam, grupoParam]);
+
+  // Chequea si hay mensajes sin leer en el chat grupal del viaje, para el
+  // puntito azul del botón "Chat". Se repite mientras la pantalla está en
+  // foco, así se refleja sin tener que salir y volver a entrar.
+  const viajeIdParaChat = data?.id;
+  useFocusEffect(
+    useCallback(() => {
+      if (!API || !viajeIdParaChat) return;
+
+      const checkEstado = async () => {
+        try {
+          const uid = await AsyncStorage.getItem("userId");
+          if (!uid) return;
+          const res = await fetch(
+            `${API}/viajes/${viajeIdParaChat}/chat/estado?usuarioId=${uid}`
+          );
+          const json = await res.json();
+          setChatNoLeido(!!json.noLeido);
+        } catch (e) {
+          console.error("Error al chequear estado del chat grupal:", e);
+        }
+      };
+
+      checkEstado();
+      chatPollRef.current = setInterval(checkEstado, CHAT_ESTADO_POLL_MS);
+
+      return () => {
+        if (chatPollRef.current) clearInterval(chatPollRef.current);
+        chatPollRef.current = null;
+      };
+    }, [API, viajeIdParaChat])
+  );
 
   if (loading)
     return (
@@ -327,6 +365,15 @@ export default function GrupoScreen() {
               <Text style={styles.funcButtonText}>Itinerario</Text>
             </Pressable>
           </Link>
+
+          <Link href={{ pathname: "/(stack)/tribeChat", params: { viajeId: String(data.id), nombre: data.nombre } }} asChild>
+            <Pressable style={styles.funcButton}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={styles.funcButtonText}>Chat</Text>
+                {chatNoLeido && <View style={styles.chatDot} />}
+              </View>
+            </Pressable>
+          </Link>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -375,6 +422,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   funcButtonText: { color: "#e8eee9", fontWeight: "600" },
+  chatDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#3B82F6",
+  },
   backBtn: {
     position: "absolute",
     top: 12,

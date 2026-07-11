@@ -33,10 +33,16 @@ export default function TabsLayout() {
           if (!cancelado) setHasUnreadChats(false);
           return;
         }
-        const res = await fetch(`${API_URL}/chats/usuario/${uid}`);
+        const [res, tribeRes] = await Promise.all([
+          fetch(`${API_URL}/chats/usuario/${uid}`),
+          fetch(`${API_URL}/viajes/usuario/${uid}/chats`),
+        ]);
         const data = await res.json();
+        const tribeData = await tribeRes.json();
         if (!cancelado) {
-          setHasUnreadChats(Array.isArray(data) && data.some((c: any) => c.noLeido));
+          const hayNoLeidoPrivado = Array.isArray(data) && data.some((c: any) => c.noLeido);
+          const hayNoLeidoTribu = Array.isArray(tribeData) && tribeData.some((c: any) => c.noLeido);
+          setHasUnreadChats(hayNoLeidoPrivado || hayNoLeidoTribu);
         }
       } catch (error) {
         // Silencioso: no queremos romper la barra de pestañas por un error de red.

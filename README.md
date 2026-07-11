@@ -21,12 +21,15 @@ Una aplicación móvil para gestionar viajes en grupo, organizar tribus de viaje
 - **Creación de Tribus**: Crea grupos de viajeros para organizar tus viajes
 - **Panel de Tribus**: Visualiza y gestiona todas tus tribus activas
 - **Itinerarios Dinámicos**: Planifica y organiza las actividades de tu viaje
-- **Gestión de Gastos**: Registra y categoriza gastos compartidos
+- **Gestión de Gastos**: Registra y categoriza gastos compartidos, y saldá deudas entre miembros (Saldar Cuentas)
 - **Lista de Tareas**: Colabora con tu grupo en tareas y pendientes
+- **Chat grupal por tribu**: todos los miembros de un viaje comparten un chat de texto
+- **Chat 1 a 1**: iniciá una conversación privada invitando a alguien por email
 - **Perfil de Usuario**: Gestiona tu información personal
 - **Perfil de Amigos**: Visualiza perfiles de otros miembros de la tribu
 - **Selector de Fechas**: Integración con calendarios nativos (iOS/Android)
 - **Subida de Imágenes**: Soporta captura de fotos desde cámara o galería
+- **Ubicación en Maps**: cada evento del itinerario abre su ubicación directo en Google Maps
 
 ## 🛠️ Tecnologías
 
@@ -153,15 +156,18 @@ TrekTribe/
 │   │   ├── (tabs)/                  # Bottom tabs (principal)
 │   │   │   ├── _layout.tsx
 │   │   │   ├── tribes.tsx           # Lista de tribus del usuario
+│   │   │   ├── chats.tsx            # Chats: grupales (por tribu) + 1 a 1
 │   │   │   └── perfil.tsx           # Perfil del usuario
 │   │   └── (stack)/                 # Stack navigator (detalles)
 │   │       ├── _layout.tsx
 │   │       ├── createTribe.tsx      # Crear nueva tribu
 │   │       ├── singleTribe.tsx      # Detalles de una tribu
-│   │       ├── itinerary.tsx        # Itinerario del viaje
-│   │       ├── expenses.tsx         # Gestión de gastos
+│   │       ├── itinerary.tsx        # Itinerario del viaje (con link a Maps)
+│   │       ├── expenses.tsx         # Gestión de gastos + Saldar Cuentas
 │   │       ├── toDos.tsx            # Lista de tareas
-│   │       └── friendProfile.tsx    # Perfil de otros usuarios
+│   │       ├── friendProfile.tsx    # Perfil de otros usuarios
+│   │       ├── tribeChat.tsx        # Chat grupal de una tribu
+│   │       └── chatConversation.tsx # Conversación de un chat 1 a 1
 │   ├── components/                  # Componentes reutilizables
 │   │   ├── DateField.tsx            # Selector de fecha
 │   │   └── EditableRow.tsx          # Fila editable
@@ -199,15 +205,18 @@ La aplicación utiliza **Expo Router** con estructura basada en carpetas:
 
 - **(tabs)**: Tabs inferiores para navegación principal
   - Tribus: Visualiza todas tus tribus
+  - Chats: chat grupal de cada tribu + chats 1 a 1 (invitación por email)
   - Perfil: Tu perfil de usuario
 
 - **(stack)**: Stack navigator para flujos detallados
   - Crear tribu: Formulario para crear nuevo viaje
-  - Ver tribu individual: Detalles y gestión de tribu
-  - Itinerario: Actividades planificadas
-  - Gastos: Registro de gastos compartidos
+  - Ver tribu individual: Detalles y gestión de tribu (incluye acceso al chat grupal)
+  - Itinerario: Actividades planificadas (ubicación con link directo a Google Maps)
+  - Gastos: Registro de gastos compartidos + Saldar Cuentas
   - Tareas: Lista de cosas por hacer
   - Perfil de amigos: Ver otros perfiles
+  - Chat grupal de tribu: conversación entre todos los miembros de un viaje
+  - Conversación 1 a 1: chat privado entre dos usuarios
 
 - **(auth)**: Stack de autenticación
   - Login: Acceso a la aplicación
