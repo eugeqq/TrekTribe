@@ -4,6 +4,7 @@ import { Image } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { authFetch } from "../../lib/authFetch";
 
 type Grupo = {
   id: number;
@@ -36,7 +37,7 @@ export default function GruposScreen() {
         return;
       }
 
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`);
+      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`);
       const data = await res.json();
 
       const normalizados: Grupo[] = (Array.isArray(data) ? data : []).map((v: any) => ({

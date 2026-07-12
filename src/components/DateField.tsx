@@ -30,6 +30,128 @@ const parseDateString = (s?: string): Date | null => {
   return d;
 };
 
+const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+// Arma la grilla de un mes (semanas empezando en lunes), rellenando con
+// null los huecos antes del día 1 y después del último día.
+const buildMonthGrid = (year: number, month: number): (Date | null)[] => {
+  const firstOfMonth = new Date(year, month, 1);
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // 0 = lunes
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (Date | null)[] = new Array(firstWeekday).fill(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+// Mini calendario propio para web: @react-native-community/datetimepicker
+// no tiene implementación para esa plataforma (renderiza null), y el
+// <input type="date"> del navegador abre un popup nativo que varía entre
+// navegadores. Esto da el mismo look en cualquier navegador y permite
+// navegar entre meses.
+function MiniCalendar({ selected, onSelect }: { selected: Date; onSelect: (d: Date) => void }) {
+  const [viewYear, setViewYear] = useState(selected.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selected.getMonth());
+
+  const goPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+  const goNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const cells = buildMonthGrid(viewYear, viewMonth);
+
+  return (
+    <View style={calStyles.wrap}>
+      <View style={calStyles.header}>
+        <Pressable onPress={goPrevMonth} hitSlop={8} style={calStyles.navBtn}>
+          <Feather name="chevron-left" size={20} color="#111" />
+        </Pressable>
+        <Text style={calStyles.headerText}>
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </Text>
+        <Pressable onPress={goNextMonth} hitSlop={8} style={calStyles.navBtn}>
+          <Feather name="chevron-right" size={20} color="#111" />
+        </Pressable>
+      </View>
+
+      <View style={calStyles.row}>
+        {WEEKDAYS.map((w, i) => (
+          <Text key={i} style={calStyles.weekdayText}>
+            {w}
+          </Text>
+        ))}
+      </View>
+
+      <View style={[calStyles.row, { flexWrap: "wrap" }]}>
+        {cells.map((cell, i) => {
+          const active = !!cell && isSameDay(cell, selected);
+          return (
+            <Pressable
+              key={i}
+              disabled={!cell}
+              onPress={() => cell && onSelect(cell)}
+              style={[calStyles.dayCell, active && calStyles.dayCellActive]}
+            >
+              {cell && (
+                <Text style={[calStyles.dayText, active && calStyles.dayTextActive]}>{cell.getDate()}</Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const calStyles = StyleSheet.create({
+  wrap: { width: 280 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  navBtn: { padding: 4 },
+  headerText: { fontSize: 15, fontWeight: "700", color: "#111", textTransform: "capitalize" },
+  row: { flexDirection: "row" },
+  weekdayText: {
+    width: 40,
+    textAlign: "center",
+    color: "#667066",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  dayCell: {
+    width: 40,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  dayCellActive: { backgroundColor: "#4B5320" },
+  dayText: { color: "#111", fontSize: 14 },
+  dayTextActive: { color: "#fff", fontWeight: "700" },
+});
+
 export default function DateField({
   value,
   placeholder,
@@ -75,19 +197,24 @@ export default function DateField({
         )}
       </Pressable>
 
-      {showPicker && Platform.OS === "ios" ? (
+      {showPicker && (Platform.OS === "ios" || Platform.OS === "web") ? (
         <Modal transparent animationType="fade" visible={showPicker} onRequestClose={() => setShowPicker(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setShowPicker(false)}>
+          <View style={styles.modalOverlay}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowPicker(false)} />
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Seleccione la fecha</Text>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display="spinner"
-                onChange={(event: any, selectedDate?: Date) => {
-                  if (selectedDate) setTempDate(selectedDate);
-                }}
-              />
+              {Platform.OS === "web" ? (
+                <MiniCalendar selected={tempDate} onSelect={setTempDate} />
+              ) : (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={(event: any, selectedDate?: Date) => {
+                    if (selectedDate) setTempDate(selectedDate);
+                  }}
+                />
+              )}
               <View style={styles.modalButtons}>
                 <Pressable style={styles.modalBtn} onPress={() => setShowPicker(false)}>
                   <Text style={styles.modalBtnText}>Cancelar</Text>
@@ -103,7 +230,7 @@ export default function DateField({
                 </Pressable>
               </View>
             </View>
-          </Pressable>
+          </View>
         </Modal>
       ) : showPicker ? (
         <DateTimePicker

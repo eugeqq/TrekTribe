@@ -21,16 +21,8 @@ import {
   TouchableWithoutFeedback,
   View
 } from "react-native";
-
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-  delete: "#f06292",
-};
+import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 type Tarea = {
   id: string;
@@ -113,7 +105,7 @@ export default function ToDosScreen() {
   const fetchViaje = useCallback(async () => {
     if (!API || !groupId) return;
     try {
-      const res = await fetch(`${API}/viajes/detalle/${groupId}`);
+      const res = await authFetch(`${API}/viajes/detalle/${groupId}`);
       const data = await safeJson(res);
       setViaje(data);
     } catch (e) {
@@ -124,7 +116,7 @@ export default function ToDosScreen() {
   const fetchTareas = useCallback(async () => {
     if (!API || !groupId) return;
     try {
-      const res = await fetch(`${API}/viajes/${groupId}/tareas`);
+      const res = await authFetch(`${API}/viajes/${groupId}/tareas`);
       const data = await safeJson(res);
       const rows: Tarea[] = Array.isArray(data)
         ? data.map((t: any) => ({
@@ -152,7 +144,7 @@ export default function ToDosScreen() {
   const fetchParticipantes = useCallback(async () => {
     if (!API || !groupId) return;
     try {
-      const res = await fetch(`${API}/viajes/${groupId}/participantes`);
+      const res = await authFetch(`${API}/viajes/${groupId}/participantes`);
       const data = await safeJson(res);
       setParticipantes(data);
     } catch (e) {
@@ -226,7 +218,7 @@ export default function ToDosScreen() {
         : `${API}/tareas/${selected.id}`;
       const method = isNew ? "POST" : "PUT";
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -263,7 +255,7 @@ export default function ToDosScreen() {
   //     console.log("🔥 Confirmación de eliminación. Enviando DELETE a:", deleteUrl);
       
   //     try {
-  //         const res = await fetch(deleteUrl, { method: "DELETE" });
+  //         const res = await authFetch(deleteUrl, { method: "DELETE" });
           
   //         if (!res.ok) {
   //             const errorText = await res.text();
@@ -291,7 +283,7 @@ export default function ToDosScreen() {
     try {
       console.log('recibido es',activityId)
       const idStr = String(activityId);
-      const res = await fetch(`${API}/tareas/${idStr}`, { method: "DELETE" });
+      const res = await authFetch(`${API}/tareas/${idStr}`, { method: "DELETE" });
       console.log('paso consulta')
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
@@ -426,9 +418,11 @@ export default function ToDosScreen() {
     behavior={Platform.OS === "ios" ? "padding" : "height"}
     keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // probá subir/bajar este valor
   >
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
+    <View style={styles.modalBackdrop}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={StyleSheet.absoluteFill} />
+      </TouchableWithoutFeedback>
+      <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {selected?.id === "new" ? "Nueva tarea" : "Editar tarea"}
@@ -557,7 +551,6 @@ export default function ToDosScreen() {
           )}
         </View>
       </View>
-    </TouchableWithoutFeedback>
   </KeyboardAvoidingView>
 </Modal>
 

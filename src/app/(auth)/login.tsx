@@ -142,10 +142,6 @@ export default function LoginScreen() {
         <Pressable style={styles.btnSecondary} onPress={createAccount}>
           <Text style={styles.btnSecondaryText}>No tengo cuenta</Text>
         </Pressable>
-
-        <Pressable style={styles.btnGhost}>
-          <Text style={styles.btnGhostText}>¿Olvidaste tu contraseña?</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -192,8 +188,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btnSecondaryText: { color: "#e8eee9", fontWeight: "700", fontSize: 16 },
-  btnGhost: { paddingVertical: 12, alignItems: "center" },
-  btnGhostText: { color: "#9ec39f", fontSize: 14, fontWeight: "600" },
   errorBox: {
     backgroundColor: "#401818",
     borderRadius: 10,

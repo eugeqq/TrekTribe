@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { authFetch } from "../../lib/authFetch";
 
 type Grupo = { id: number; nombre: string };
 
@@ -16,6 +17,7 @@ export default function PerfilAmigoScreen() {
     apodo?: string;
     avatarUri?: string;
     grupos?: string;
+    viajeId?: string;
   }>();
 
   const API = process.env.EXPO_PUBLIC_API_URL;
@@ -48,7 +50,7 @@ export default function PerfilAmigoScreen() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API}/user/${id}`);
+        const res = await authFetch(`${API}/user/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const j = await res.json();
         if (cancelled) return;
@@ -75,13 +77,31 @@ export default function PerfilAmigoScreen() {
   
 
   const eliminarAmigo = () => {
-    //ACA DEBERIA ELIMINAR REALMENTE DE LA TRIBU
-    alert(`Se eliminará a ${nombre} de tus amigos`);
+    const id = raw.id;
+    const viajeId = raw.viajeId;
+    if (!id || !viajeId || !API) return;
+
+    Alert.alert("Eliminar de la tribu", `¿Seguro que querés eliminar a ${nombre} de esta tribu?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const res = await authFetch(`${API}/viajes/${viajeId}/miembros/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            router.back();
+          } catch (e) {
+            console.error("Error al eliminar de la tribu:", e);
+            Alert.alert("Error", "No se pudo eliminar de la tribu.");
+          }
+        },
+      },
+    ]);
   };
 
-  const irAGrupo = (nombreGrupo: string) => {
-    
-    alert(`Ir al grupo: ${nombreGrupo}`);
+  const irAGrupo = (grupoId: number) => {
+    router.push({ pathname: "/(stack)/singleTribe", params: { id: String(grupoId) } });
   };
 
   return (
@@ -118,7 +138,7 @@ export default function PerfilAmigoScreen() {
             <Text style={{ color: "#9aa49d" }}>Sin grupos</Text>
           ) : (
             grupos.map((g) => (
-              <Pressable key={g.id} style={styles.groupButton} onPress={() => irAGrupo(g.nombre)}>
+              <Pressable key={g.id} style={styles.groupButton} onPress={() => irAGrupo(g.id)}>
                 <Text style={styles.groupButtonText}>{g.nombre}</Text>
               </Pressable>
             ))

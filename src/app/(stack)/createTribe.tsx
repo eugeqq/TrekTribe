@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateField from "../../components/DateField";
+import { authFetch } from "../../lib/authFetch";
 
 export default function CrearGrupoScreen() {
   const [nombre, setNombre] = useState("");
@@ -91,7 +92,7 @@ export default function CrearGrupoScreen() {
       }
       
 
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tribes`, {
+      const response = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/tribes`, {
         method: "POST",
         body: formData,
       });
@@ -119,7 +120,7 @@ export default function CrearGrupoScreen() {
           const currentUserId = await AsyncStorage.getItem("userId");
           const invites = await Promise.all(
             emails.map(async (email) => {
-              const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${data.id}/miembros`, {
+              const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${data.id}/miembros`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ currentUserId: Number(currentUserId), email }),

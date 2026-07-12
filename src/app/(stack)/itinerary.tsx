@@ -23,6 +23,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateField from "../../components/DateField";
+import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 type Grupo = {
     id: number;
@@ -74,15 +76,6 @@ function LabeledInput(props: {
   );
 }
 
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-  delete: "#f06292",
-};
 
 async function safeJson(res: Response) {
     const text = await res.text();
@@ -151,7 +144,7 @@ export default function ItineraryScreen() {
     if (!API || !viajeId) return;
     try {
       setLoading(true);
-        const res = await fetch(`${API}/viajes/${viajeId}/itinerario`);
+        const res = await authFetch(`${API}/viajes/${viajeId}/itinerario`);
         const data = await res.json();
         const rows: Activity[] = (Array.isArray(data) ? data : []).map((a: any) => ({
         id: String(a.id),
@@ -217,7 +210,7 @@ export default function ItineraryScreen() {
     if (!API) return;
     try {
       const idStr = String(activityId);
-      const res = await fetch(`${API}/viajes/itinerario/${idStr}`, { method: "DELETE" });
+      const res = await authFetch(`${API}/viajes/itinerario/${idStr}`, { method: "DELETE" });
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
         throw new Error(txt || `Error al eliminar (HTTP ${res.status})`);
@@ -254,7 +247,7 @@ export default function ItineraryScreen() {
       };
   
       if (selectedActivity.id === "new") {
-        const res = await fetch(`${API}/viajes/${viajeId}/itinerario`, {
+        const res = await authFetch(`${API}/viajes/${viajeId}/itinerario`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -285,7 +278,7 @@ export default function ItineraryScreen() {
         closeModal();
         Alert.alert("Listo", "Actividad creada");
       } else {
-        const res = await fetch(`${API}/viajes/itinerario/${selectedActivity.id}`, {
+        const res = await authFetch(`${API}/viajes/itinerario/${selectedActivity.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -332,7 +325,7 @@ export default function ItineraryScreen() {
     if (!API || !viajeId) return;
     (async () => {
       try {
-        const res = await fetch(`${API}/viajes/detalle/${viajeId}`);
+        const res = await authFetch(`${API}/viajes/detalle/${viajeId}`);
         const v = await res.json();
         setGrupo({
           id: v.id ?? Number(viajeId),
@@ -507,9 +500,11 @@ renderItem={({ item }) => (
     behavior={Platform.OS === "ios" ? "padding" : "height"}
     keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // ajustá si hace falta
   >
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
+    <View style={styles.modalBackdrop}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={StyleSheet.absoluteFill} />
+      </TouchableWithoutFeedback>
+      <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {selectedActivity?.id === "new"
@@ -590,7 +585,6 @@ renderItem={({ item }) => (
           )}
         </View>
       </View>
-    </TouchableWithoutFeedback>
   </KeyboardAvoidingView>
 </Modal>
 

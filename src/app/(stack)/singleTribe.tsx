@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { authFetch } from "../../lib/authFetch";
 
 // Cada cuánto se fija si hay mensajes sin leer en el chat grupal del viaje,
 // mientras esta pantalla está en foco.
@@ -54,7 +55,12 @@ export default function GrupoScreen() {
   const API = process.env.EXPO_PUBLIC_API_URL;
   const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
+  // useFocusEffect (no useEffect simple) para que, al volver de friendProfile
+  // después de eliminar a alguien de la tribu, la lista de miembros se
+  // recargue del servidor en vez de seguir mostrando la versión vieja que
+  // ya estaba en memoria (expo-router no remonta esta pantalla al volver).
+  useFocusEffect(
+    useCallback(() => {
     let cancel = false;
     (async () => {
       try {
@@ -84,7 +90,7 @@ export default function GrupoScreen() {
 
         if (!idParam) throw new Error("Falta el id del grupo");
 
-        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/detalle/${idParam}`);
+        const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/detalle/${idParam}`);
         const json = await res.json();
         const miembros = Array.isArray(json.miembros)
           ? json.miembros.map((m: any, i: number) => ({
@@ -112,7 +118,8 @@ export default function GrupoScreen() {
     return () => {
       cancel = true;
     };
-  }, [idParam, grupoParam]);
+    }, [idParam, grupoParam])
+  );
 
   // Chequea si hay mensajes sin leer en el chat grupal del viaje, para el
   // puntito azul del botón "Chat". Se repite mientras la pantalla está en
@@ -126,7 +133,7 @@ export default function GrupoScreen() {
         try {
           const uid = await AsyncStorage.getItem("userId");
           if (!uid) return;
-          const res = await fetch(
+          const res = await authFetch(
             `${API}/viajes/${viajeIdParaChat}/chat/estado?usuarioId=${uid}`
           );
           const json = await res.json();
@@ -178,7 +185,7 @@ export default function GrupoScreen() {
     setSearching(true);
     try {
       console.log("Searching users with query:", searchQuery);
-      const res = await fetch(`${API}/user/email/${encodeURIComponent(searchQuery)}`);
+      const res = await authFetch(`${API}/user/email/${encodeURIComponent(searchQuery)}`);
       console.log("searchUsers response:", res);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const j = await res.json();
@@ -208,7 +215,7 @@ export default function GrupoScreen() {
     setAdding(true);
     try {
       const currentUserId = await AsyncStorage.getItem("userId");
-      const res = await fetch(`${API}/viajes/${idParam}/miembros`, {
+      const res = await authFetch(`${API}/viajes/${idParam}/miembros`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentUserId: Number(currentUserId), usuarioId: user.id }),
@@ -333,7 +340,7 @@ export default function GrupoScreen() {
                 onPress={() =>
                   router.push({
                     pathname: "/(stack)/friendProfile",
-                    params: { id: String(m.id), nombre: m.nombre },
+                    params: { id: String(m.id), nombre: m.nombre, viajeId: String(idParam) },
                   })
                 }
               >

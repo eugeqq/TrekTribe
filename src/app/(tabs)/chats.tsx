@@ -13,15 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-};
+import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 // Cada cuánto se refresca sola la lista de chats mientras la pestaña está
 // abierta, para que el circulito de "no leído" aparezca sin tener que
@@ -68,8 +61,8 @@ export default function ChatsScreen() {
           return;
         }
         const [chatsRes, tribeChatsRes] = await Promise.all([
-          fetch(`${API_URL}/chats/usuario/${uid}`),
-          fetch(`${API_URL}/viajes/usuario/${uid}/chats`),
+          authFetch(`${API_URL}/chats/usuario/${uid}`),
+          authFetch(`${API_URL}/viajes/usuario/${uid}/chats`),
         ]);
         const data = await chatsRes.json();
         const tribeData = await tribeChatsRes.json();
@@ -141,7 +134,7 @@ export default function ChatsScreen() {
 
     setInviting(true);
     try {
-      const res = await fetch(`${API_URL}/chats/invitar`, {
+      const res = await authFetch(`${API_URL}/chats/invitar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentUserId: Number(userId), email }),

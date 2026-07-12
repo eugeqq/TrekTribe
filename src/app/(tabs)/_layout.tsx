@@ -3,15 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
-
-const COLORS = {
-  bg: "#0F1310",
-  surface: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  subtext: "#9aa49d",
-  accent: "#9ec39f",
-};
+import { authFetch } from "../../lib/authFetch";
+import { C as COLORS } from "../../theme";
 
 // Cada cuánto se fija si hay algún chat sin leer, para pintar el puntito
 // azul sobre el ícono de la pestaña "Chats" (sin depender de estar parado
@@ -34,8 +27,8 @@ export default function TabsLayout() {
           return;
         }
         const [res, tribeRes] = await Promise.all([
-          fetch(`${API_URL}/chats/usuario/${uid}`),
-          fetch(`${API_URL}/viajes/usuario/${uid}/chats`),
+          authFetch(`${API_URL}/chats/usuario/${uid}`),
+          authFetch(`${API_URL}/viajes/usuario/${uid}/chats`),
         ]);
         const data = await res.json();
         const tribeData = await tribeRes.json();

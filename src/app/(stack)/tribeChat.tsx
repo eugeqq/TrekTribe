@@ -14,15 +14,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-};
+import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 // Cada cuánto se refresca sola la conversación mientras está abierta.
 const POLL_INTERVAL_MS = 3000;
@@ -65,7 +58,7 @@ export default function TribeChatScreen() {
       if (!API || !viajeId) return;
       try {
         if (!silencioso) setLoading(true);
-        const res = await fetch(`${API}/viajes/${viajeId}/chat`);
+        const res = await authFetch(`${API}/viajes/${viajeId}/chat`);
         const data = await res.json();
         setMensajes(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -86,7 +79,7 @@ export default function TribeChatScreen() {
     try {
       const uid = await AsyncStorage.getItem("userId");
       if (!uid) return;
-      await fetch(`${API}/viajes/${viajeId}/chat/leido`, {
+      await authFetch(`${API}/viajes/${viajeId}/chat/leido`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usuarioId: Number(uid) }),
@@ -121,7 +114,7 @@ export default function TribeChatScreen() {
     setSending(true);
     setTexto("");
     try {
-      const res = await fetch(`${API}/viajes/${viajeId}/chat`, {
+      const res = await authFetch(`${API}/viajes/${viajeId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usuarioId: Number(userId), contenido }),

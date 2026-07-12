@@ -6,6 +6,7 @@ import {
   Alert,
   FlatList,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -16,6 +17,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 /* Types */
 type Participant = { id: string; name: string; avatar?: string };
@@ -48,16 +51,6 @@ type Grupo = {
   imagenUrl?: string;
 };
 
-/* Colors + styles (mantengo los tuyos) */
-const C = {
-  bg: "#0F1310",
-  card: "#1a1f1b",
-  border: "#2a322b",
-  text: "#e8eee9",
-  muted: "#9aa49d",
-  accent: "#9ec39f",
-  warning: "#d9534f",
-};
 
 
 
@@ -287,10 +280,10 @@ export default function ExpensesScreen({ route }: any) {
       // devuelve el id real del usuario y el nombre completo, sin mezclar
       // el id de la fila pivote (MiembroViaje) con el id de usuario.
       const [detalleRes, expRes, partRes, settleRes] = await Promise.all([
-        fetch(`${API_URL}/viajes/detalle/${tripId}`),
-        fetch(`${API_URL}/viajes/${tripId}/gastos`),
-        fetch(`${API_URL}/viajes/${tripId}/participantes`),
-        fetch(`${API_URL}/viajes/${tripId}/settlements`),
+        authFetch(`${API_URL}/viajes/detalle/${tripId}`),
+        authFetch(`${API_URL}/viajes/${tripId}/gastos`),
+        authFetch(`${API_URL}/viajes/${tripId}/participantes`),
+        authFetch(`${API_URL}/viajes/${tripId}/settlements`),
       ]);
 
       if (!detalleRes.ok) throw new Error("Error al obtener detalle del viaje");
@@ -419,7 +412,7 @@ export default function ExpensesScreen({ route }: any) {
       const url = editExpenseId ? `${API_URL}/gastos/${editExpenseId}` : `${API_URL}/gastos`;
       const method = editExpenseId ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -442,7 +435,7 @@ export default function ExpensesScreen({ route }: any) {
   const onDeleteExpense = async (expenseId: string) => {
    
           try {
-            const res = await fetch(`${API_URL}/gastos/${expenseId}`, { method: "DELETE" });
+            const res = await authFetch(`${API_URL}/gastos/${expenseId}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Error al eliminar");
             await fetchTripData(viajeId);
           } catch (err) {
@@ -478,7 +471,7 @@ export default function ExpensesScreen({ route }: any) {
 
     setSavingSettlement(true);
     try {
-      const res = await fetch(`${API_URL}/viajes/${viajeId}/settlements`, {
+      const res = await authFetch(`${API_URL}/viajes/${viajeId}/settlements`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -595,92 +588,104 @@ export default function ExpensesScreen({ route }: any) {
 
       {/* Modal crear/editar */}
       <Modal visible={isCreateModalOpen} animationType="slide" transparent onRequestClose={closeCreateModal}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{isEditing ? "Editar Gasto" : "Agregar Gasto"}</Text>
-              <Pressable onPress={closeCreateModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
-              <Text style={styles.label}>Descripción</Text>
-              <TextInput value={draftTitle} onChangeText={setDraftTitle} placeholder="Ej: Pizza del viernes" placeholderTextColor="#6b746e" style={styles.input} />
-              <Text style={styles.label}>Monto</Text>
-              <TextInput value={draftAmount} onChangeText={setDraftAmount} placeholder="0" keyboardType="numeric" placeholderTextColor="#6b746e" style={styles.input} />
-
-              <Text style={styles.label}>¿Quién pagó?</Text>
-              <View style={styles.pillRow}>
-                {participants.map((p) => (
-                  <Pressable key={p.id} onPress={() => setDraftPayer(p.id)} style={[styles.pill, draftPayer === p.id && styles.pillActive]}>
-                    <Text style={[styles.pillText, draftPayer === p.id && { color: C.accent }]}>{p.name}</Text>
-                  </Pressable>
-                ))}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{isEditing ? "Editar Gasto" : "Agregar Gasto"}</Text>
+                <Pressable onPress={closeCreateModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
               </View>
 
-              <Text style={styles.label}>Participantes</Text>
-              <View style={{ gap: 8 }}>
-                {participants.map((p) => {
-                  const checked = draftSelected.includes(p.id);
-                  return (
-                    <Pressable key={p.id} onPress={() => setDraftSelected((prev) => (checked ? prev.filter((id) => id !== p.id) : [...prev, p.id]))} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Ionicons name={checked ? "checkbox" : "square-outline"} size={20} color={checked ? C.accent : C.muted} />
-                      <Text style={{ color: C.text }}>{p.name}</Text>
+              <ScrollView contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+                <Text style={styles.label}>Descripción</Text>
+                <TextInput value={draftTitle} onChangeText={setDraftTitle} placeholder="Ej: Pizza del viernes" placeholderTextColor="#6b746e" style={styles.input} />
+                <Text style={styles.label}>Monto</Text>
+                <TextInput value={draftAmount} onChangeText={setDraftAmount} placeholder="0" keyboardType="numeric" placeholderTextColor="#6b746e" style={styles.input} />
+
+                <Text style={styles.label}>¿Quién pagó?</Text>
+                <View style={styles.pillRow}>
+                  {participants.map((p) => (
+                    <Pressable key={p.id} onPress={() => setDraftPayer(p.id)} style={[styles.pill, draftPayer === p.id && styles.pillActive]}>
+                      <Text style={[styles.pillText, draftPayer === p.id && { color: C.accent }]}>{p.name}</Text>
                     </Pressable>
-                  );
-                })}
-              </View>
+                  ))}
+                </View>
 
-              <Pressable style={[styles.primaryBtn, { marginTop: 8 }]} onPress={onSaveExpense}>
-                <Text style={styles.primaryBtnText}>{isEditing ? "Guardar Cambios" : "Guardar Gasto"}</Text>
-              </Pressable>
-            </ScrollView>
+                <Text style={styles.label}>Participantes</Text>
+                <View style={{ gap: 8 }}>
+                  {participants.map((p) => {
+                    const checked = draftSelected.includes(p.id);
+                    return (
+                      <Pressable key={p.id} onPress={() => setDraftSelected((prev) => (checked ? prev.filter((id) => id !== p.id) : [...prev, p.id]))} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Ionicons name={checked ? "checkbox" : "square-outline"} size={20} color={checked ? C.accent : C.muted} />
+                        <Text style={{ color: C.text }}>{p.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Pressable style={[styles.primaryBtn, { marginTop: 8 }]} onPress={onSaveExpense}>
+                  <Text style={styles.primaryBtnText}>{isEditing ? "Guardar Cambios" : "Guardar Gasto"}</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal saldar (simple) */}
       <Modal visible={isSettleModalOpen} animationType="slide" transparent onRequestClose={closeSettleModal}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Saldar Deuda</Text>
-              <Pressable onPress={closeSettleModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Saldar Deuda</Text>
+                <Pressable onPress={closeSettleModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
+              </View>
+
+              <ScrollView contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+                <Text style={styles.label}>¿Quién paga?</Text>
+                <View style={styles.pillRow}>
+                  {participants.map((p) => (
+                    <Pressable key={p.id} onPress={() => setSettlePayerId(p.id)} style={[styles.pill, settlePayerId === p.id && styles.pillActive]}>
+                      <Text style={[styles.pillText, settlePayerId === p.id && { color: C.accent }]}>{p.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={[styles.label, { marginTop: 8 }]}>¿Quién recibe?</Text>
+                <View style={styles.pillRow}>
+                  {participants.map((p) => (
+                    <Pressable key={p.id} onPress={() => setSettlePayeeId(p.id)} style={[styles.pill, settlePayeeId === p.id && styles.pillActive]}>
+                      <Text style={[styles.pillText, settlePayeeId === p.id && { color: C.accent }]}>{p.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Monto</Text>
+                <TextInput value={settleAmount} onChangeText={setSettleAmount} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#6b746e" style={styles.input} />
+
+                <Pressable
+                  style={[styles.primaryBtn, { marginTop: 8 }, savingSettlement && { opacity: 0.7 }]}
+                  onPress={onConfirmSettle}
+                  disabled={savingSettlement}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    {savingSettlement ? "Guardando..." : "Confirmar Pago"}
+                  </Text>
+                </Pressable>
+              </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
-              <Text style={styles.label}>¿Quién paga?</Text>
-              <View style={styles.pillRow}>
-                {participants.map((p) => (
-                  <Pressable key={p.id} onPress={() => setSettlePayerId(p.id)} style={[styles.pill, settlePayerId === p.id && styles.pillActive]}>
-                    <Text style={[styles.pillText, settlePayerId === p.id && { color: C.accent }]}>{p.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={[styles.label, { marginTop: 8 }]}>¿Quién recibe?</Text>
-              <View style={styles.pillRow}>
-                {participants.map((p) => (
-                  <Pressable key={p.id} onPress={() => setSettlePayeeId(p.id)} style={[styles.pill, settlePayeeId === p.id && styles.pillActive]}>
-                    <Text style={[styles.pillText, settlePayeeId === p.id && { color: C.accent }]}>{p.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text style={styles.label}>Monto</Text>
-              <TextInput value={settleAmount} onChangeText={setSettleAmount} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#6b746e" style={styles.input} />
-
-              <Pressable
-                style={[styles.primaryBtn, { marginTop: 8 }, savingSettlement && { opacity: 0.7 }]}
-                onPress={onConfirmSettle}
-                disabled={savingSettlement}
-              >
-                <Text style={styles.primaryBtnText}>
-                  {savingSettlement ? "Guardando..." : "Confirmar Pago"}
-                </Text>
-              </Pressable>
-            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       
       </SafeAreaView>

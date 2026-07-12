@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, Te
 import DateField from "../../components/DateField";
 import EditableRow from "../../components/EditableRow";
 import { useAuth } from "../../lib/authContext";
+import { authFetch } from "../../lib/authFetch";
 
 type Profile = {
   nombre: string;
@@ -94,7 +95,7 @@ export default function PerfilScreen() {
     // Enviar al backend
     // OJO: no seteamos "Content-Type" a mano — fetch arma el boundary
     // correcto de multipart/form-data solo cuando el body es un FormData.
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+    const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
       method: "PUT",
       body: formData,
     });
@@ -117,7 +118,7 @@ export default function PerfilScreen() {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return;
 
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`);
+      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`);
       const userData = await res.json();
 
       if (res.ok) {
@@ -162,7 +163,7 @@ export default function PerfilScreen() {
       const updatedData = { ...data, [field]: tempValue };
 
     // Actualizar backend
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
         method: "PUT",
         headers: {
         "Content-Type": "application/json",
@@ -193,7 +194,7 @@ export default function PerfilScreen() {
 
       const updatedData = { ...data, fechaNacimiento: formatted };
 
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
