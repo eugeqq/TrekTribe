@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateField from "../../components/DateField";
+import { API_URL } from "../../constants";
+import { C } from "../../theme";
 import { authFetch } from "../../lib/authFetch";
 
 export default function CrearGrupoScreen() {
@@ -92,7 +94,7 @@ export default function CrearGrupoScreen() {
       }
       
 
-      const response = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/tribes`, {
+      const response = await authFetch(`${API_URL}/tribes`, {
         method: "POST",
         body: formData,
       });
@@ -120,7 +122,7 @@ export default function CrearGrupoScreen() {
           const currentUserId = await AsyncStorage.getItem("userId");
           const invites = await Promise.all(
             emails.map(async (email) => {
-              const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/${data.id}/miembros`, {
+              const res = await authFetch(`${API_URL}/viajes/${data.id}/miembros`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ currentUserId: Number(currentUserId), email }),
@@ -197,7 +199,7 @@ export default function CrearGrupoScreen() {
 
           <TextInput
             placeholder="Nombre de Tribu"
-            placeholderTextColor="#9aa49d"
+            placeholderTextColor={C.muted}
             value={nombre}
             onChangeText={setNombre}
             style={styles.input}
@@ -205,7 +207,7 @@ export default function CrearGrupoScreen() {
 
           <TextInput
             placeholder="Ubicación"
-            placeholderTextColor="#9aa49d"
+            placeholderTextColor={C.muted}
             value={ubicacion}
             onChangeText={setUbicacion}
             style={styles.input}
@@ -213,7 +215,7 @@ export default function CrearGrupoScreen() {
 
           <TextInput
             placeholder="Descripción"
-            placeholderTextColor="#9aa49d"
+            placeholderTextColor={C.muted}
             value={descripcion}
             onChangeText={setDescripcion}
             style={[styles.input, styles.inputMultiline]}
@@ -234,7 +236,7 @@ export default function CrearGrupoScreen() {
 
           <TextInput
             placeholder="Invitar por email (separá por coma o enter)"
-            placeholderTextColor="#9aa49d"
+            placeholderTextColor={C.muted}
             value={invitarEmails}
             onChangeText={setInvitarEmails}
             style={[styles.input, styles.inputMultiline]}
@@ -261,7 +263,7 @@ export default function CrearGrupoScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: 16, gap: 16, alignItems: "center" },
 
   avatarWrap: { marginBottom: 16 },
@@ -274,10 +276,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarPlaceholderText: { color: "#9aa49d", fontSize: 16, textAlign: "center" },
+  avatarPlaceholderText: { color: C.muted, fontSize: 16, textAlign: "center" },
 
   title: {
-    color: "#e8eee9",
+    color: C.text,
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 8,
@@ -286,13 +288,13 @@ const styles = StyleSheet.create({
 
   input: {
     width: "100%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#2a322b",
-    color: "#e8eee9",
+    borderColor: C.border,
+    color: C.text,
     fontSize: 16,
   },
   inputMultiline: {
@@ -301,7 +303,7 @@ const styles = StyleSheet.create({
   },
 
   btnPrimary: {
-    backgroundColor: "#4B5320",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
   btnPrimaryText: { color: "white", fontWeight: "700", fontSize: 16 },
 
   btnGhost: { paddingVertical: 12, alignItems: "center", width: "100%" },
-  btnGhostText: { color: "#9ec39f", fontSize: 14, fontWeight: "600" },
+  btnGhostText: { color: C.accent, fontSize: 14, fontWeight: "600" },
 
   errorBox: {
       backgroundColor: "#401818",

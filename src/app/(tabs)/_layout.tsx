@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
+import { API_URL } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
 import { C as COLORS } from "../../theme";
 
@@ -13,7 +14,6 @@ const UNREAD_POLL_INTERVAL_MS = 4000;
 
 export default function TabsLayout() {
   const [hasUnreadChats, setHasUnreadChats] = useState(false);
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {

@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { API_URL as API } from "../../constants";
+import { C } from "../../theme";
 import { authFetch } from "../../lib/authFetch";
 
 type Grupo = { id: number; nombre: string };
@@ -20,7 +22,6 @@ export default function PerfilAmigoScreen() {
     viajeId?: string;
   }>();
 
-  const API = process.env.EXPO_PUBLIC_API_URL;
 
   const [loading, setLoading] = useState(false);
   const [nombre, setNombre] = useState(raw.nombre ?? "Invitado");
@@ -108,7 +109,7 @@ export default function PerfilAmigoScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
         
         <View style={styles.avatarWrap}>
@@ -135,7 +136,7 @@ export default function PerfilAmigoScreen() {
         <View style={[styles.infoBox, { marginTop: 16 }]}>
           <Text style={styles.sectionTitle}>Grupos en común</Text>
           {grupos.length === 0 ? (
-            <Text style={{ color: "#9aa49d" }}>Sin grupos</Text>
+            <Text style={{ color: C.muted }}>Sin grupos</Text>
           ) : (
             grupos.map((g) => (
               <Pressable key={g.id} style={styles.groupButton} onPress={() => irAGrupo(g.id)}>
@@ -166,7 +167,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: 16, gap: 16, alignItems: "center" },
 
   avatarWrap: { marginTop: 16, marginBottom: 12 },
@@ -174,25 +175,25 @@ const styles = StyleSheet.create({
 
   infoBox: {
     width: "100%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 16,
     padding: 16,
     gap: 12,
   },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  rowLabel: { color: "#9aa49d", fontSize: 14, fontWeight: "600" },
-  rowValue: { color: "#e8eee9", fontSize: 16, fontWeight: "700" },
+  rowLabel: { color: C.muted, fontSize: 14, fontWeight: "600" },
+  rowValue: { color: C.text, fontSize: 16, fontWeight: "700" },
 
-  sectionTitle: { color: "#9aa49d", fontWeight: "500", fontSize: 16, marginBottom: 8 },
+  sectionTitle: { color: C.muted, fontWeight: "500", fontSize: 16, marginBottom: 8 },
 
   groupButton: {
-    backgroundColor: "#2a322b",
+    backgroundColor: C.border,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  groupButtonText: { color: "#9ec39f", fontWeight: "600" },
+  groupButtonText: { color: C.accent, fontWeight: "600" },
 
   btnPrimary: {
     backgroundColor: "#993333",
@@ -212,9 +213,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,

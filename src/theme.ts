@@ -14,6 +14,7 @@ export const C = {
   muted: "#9aa49d",
   subtext: "#9aa49d",
   accent: "#9ec39f",
+  primary: "#4B5320",
   delete: "#f06292",
   warning: "#d9534f",
 };

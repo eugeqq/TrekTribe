@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_URL } from "../../constants";
+import { C } from "../../theme";
 import { authService } from "../../lib/auth";
 import { useAuth } from "../../lib/authContext";
 
@@ -26,7 +28,7 @@ export default function LoginScreen() {
     }
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
+      const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -70,7 +72,6 @@ export default function LoginScreen() {
         nombre: data.nombre,
         apellido: data.apellido,
       });
-      console.log("[LOGIN] session after save:", await authService.getSession());
 
       // Refrescar el contexto para que detecte la nueva sesión
       await refresh();
@@ -112,7 +113,7 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
           placeholder="Email"
-          placeholderTextColor="#9aa49d"
+          placeholderTextColor={C.muted}
           keyboardType="email-address"
           autoCapitalize="none"
           style={[styles.input, isBlocked && styles.inputDisabled]}
@@ -123,7 +124,7 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Contraseña"
-          placeholderTextColor="#9aa49d"
+          placeholderTextColor={C.muted}
           secureTextEntry
           style={[styles.input, isBlocked && styles.inputDisabled]}
           editable={!isBlocked && !loading}
@@ -148,7 +149,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -156,25 +157,25 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    color: "#e8eee9",
+    color: C.text,
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 8,
     textAlign: "center",
   },
-  subtitle: { color: "#9aa49d", fontSize: 16, marginBottom: 20, textAlign: "center" },
+  subtitle: { color: C.muted, fontSize: 16, marginBottom: 20, textAlign: "center" },
   input: {
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#2a322b",
-    color: "#e8eee9",
+    borderColor: C.border,
+    color: C.text,
     fontSize: 16,
   },
   btnPrimary: {
-    backgroundColor: "#4B5320",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -182,12 +183,12 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: { color: "white", fontWeight: "700", fontSize: 16 },
   btnSecondary: {
-    backgroundColor: "#2a322b",
+    backgroundColor: C.border,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
   },
-  btnSecondaryText: { color: "#e8eee9", fontWeight: "700", fontSize: 16 },
+  btnSecondaryText: { color: C.text, fontWeight: "700", fontSize: 16 },
   errorBox: {
     backgroundColor: "#401818",
     borderRadius: 10,
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#151915",
   },
   btnDisabled: {
-    backgroundColor: "#2a322b",
+    backgroundColor: C.border,
     opacity: 0.6,
   },
   btnDisabledText: {

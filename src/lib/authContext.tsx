@@ -22,16 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Función para verificar sesión
   const checkSession = useCallback(async () => {
     try {
-      
       const session = await authService.getSession();
-      
+
       if (session) {
-        console.log("[AUTHCTX] session found:", session);
-
         const isValid = await authService.validateSessionWithServer(session);
-
-        console.log("[AUTHCTX] validate result:", isValid);
-        
         setIsSignedIn(isValid);
       } else {
         setIsSignedIn(false);

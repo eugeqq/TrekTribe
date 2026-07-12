@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, Text, View, StyleSheet, PressableProps } from "react-native";
+import { C } from "../theme";
 
 type Props = {
   label: string;
@@ -29,17 +30,17 @@ export default function EditableRow({ label, value, onPress, disabled, onLongPre
 const styles = StyleSheet.create({
   row: {
     width: "100%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  rowLabel: { color: "#9aa49d", fontSize: 12, marginBottom: 4 },
-  rowValue: { color: "#e8eee9", fontSize: 16, fontWeight: "600" },
-  rowEdit: { color: "#9ec39f", fontSize: 14, fontWeight: "700" },
+  rowLabel: { color: C.muted, fontSize: 12, marginBottom: 4 },
+  rowValue: { color: C.text, fontSize: 16, fontWeight: "600" },
+  rowEdit: { color: C.accent, fontSize: 14, fontWeight: "700" },
 });

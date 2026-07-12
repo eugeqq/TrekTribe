@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_URL } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
 import { C } from "../../theme";
 
@@ -229,7 +230,6 @@ export default function ExpensesScreen({ route }: any) {
   const [settleAmount, setSettleAmount] = useState("");
   const [savingSettlement, setSavingSettlement] = useState(false);
 
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
     const init = async () => {
@@ -506,7 +506,7 @@ export default function ExpensesScreen({ route }: any) {
         ListHeaderComponent={
           <>
             <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+              <Ionicons name="chevron-back" size={22} color={C.text} />
             </Pressable>
   
             <View style={styles.portadaWrap}>
@@ -543,7 +543,7 @@ export default function ExpensesScreen({ route }: any) {
                 }}
               >
                 <Text style={styles.primaryBtnText}>
-                  <Ionicons name="add" size={16} color="#0F1310" /> Registrar nuevo
+                  <Ionicons name="add" size={16} color={C.bg} /> Registrar nuevo
                   gasto
                 </Text>
               </Pressable>
@@ -597,7 +597,7 @@ export default function ExpensesScreen({ route }: any) {
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{isEditing ? "Editar Gasto" : "Agregar Gasto"}</Text>
-                <Pressable onPress={closeCreateModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
+                <Pressable onPress={closeCreateModal}><Ionicons name="close" size={22} color={C.text} /></Pressable>
               </View>
 
               <ScrollView contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
@@ -648,7 +648,7 @@ export default function ExpensesScreen({ route }: any) {
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Saldar Deuda</Text>
-                <Pressable onPress={closeSettleModal}><Ionicons name="close" size={22} color="#e8eee9" /></Pressable>
+                <Pressable onPress={closeSettleModal}><Ionicons name="close" size={22} color={C.text} /></Pressable>
               </View>
 
               <ScrollView contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
@@ -704,9 +704,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -730,11 +730,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, color: C.text, fontWeight: "700" },
   input: { borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: Platform.select({ ios: 10, android: 8 }), fontSize: 14, backgroundColor: "#0f1511", color: C.text, marginBottom: 10 },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "#2a322b", borderWidth: 1, borderColor: C.border },
+  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: C.border, borderWidth: 1, borderColor: C.border },
   pillActive: { backgroundColor: "#233027", borderColor: C.accent },
   pillText: { fontSize: 13, color: C.text },
   primaryBtn: { backgroundColor: C.accent, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
-  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
+  primaryBtnText: { color: C.bg, fontWeight: "800", fontSize: 15 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", padding: 16, justifyContent: "flex-end" },
   modalCard: { maxHeight: "88%", backgroundColor: C.card, borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: C.border },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

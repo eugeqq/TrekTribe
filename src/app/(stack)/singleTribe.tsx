@@ -3,7 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Image, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { API_URL as API } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
+import { C } from "../../theme";
 
 // Cada cuánto se fija si hay mensajes sin leer en el chat grupal del viaje,
 // mientras esta pantalla está en foco.
@@ -52,7 +54,6 @@ export default function GrupoScreen() {
   const [searchResults, setSearchResults] = useState<Array<any>>([]);
   const [adding, setAdding] = useState(false);
   const [chatNoLeido, setChatNoLeido] = useState(false);
-  const API = process.env.EXPO_PUBLIC_API_URL;
   const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // useFocusEffect (no useEffect simple) para que, al volver de friendProfile
@@ -90,7 +91,7 @@ export default function GrupoScreen() {
 
         if (!idParam) throw new Error("Falta el id del grupo");
 
-        const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/detalle/${idParam}`);
+        const res = await authFetch(`${API}/viajes/detalle/${idParam}`);
         const json = await res.json();
         const miembros = Array.isArray(json.miembros)
           ? json.miembros.map((m: any, i: number) => ({
@@ -158,7 +159,7 @@ export default function GrupoScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator />
-          <Text style={{ color: "#e8eee9", marginTop: 8 }}>Cargando grupo…</Text>
+          <Text style={{ color: C.text, marginTop: 8 }}>Cargando grupo…</Text>
         </View>
       </SafeAreaView>
     );
@@ -167,7 +168,7 @@ export default function GrupoScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
         <View style={{ padding: 16 }}>
           <Text style={{ color: "#ff8a8a" }}>No se pudo cargar el grupo: {err ?? "Sin datos"}</Text>
@@ -184,12 +185,9 @@ export default function GrupoScreen() {
     }
     setSearching(true);
     try {
-      console.log("Searching users with query:", searchQuery);
       const res = await authFetch(`${API}/user/email/${encodeURIComponent(searchQuery)}`);
-      console.log("searchUsers response:", res);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const j = await res.json();
-      console.log("searchUsers data:", j);
       // Aceptar respuestas: array directo, objeto usuario, o { results: [] } / { data: [] }
       let arr: any[] = [];
       if (Array.isArray(j)) arr = j;
@@ -245,7 +243,7 @@ export default function GrupoScreen() {
       <ScrollView contentContainerStyle={styles.container}>
 
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
         
         <View style={styles.iconWrap}>
@@ -255,7 +253,7 @@ export default function GrupoScreen() {
             height: 100, 
             borderRadius: 50, 
             borderWidth: 2, 
-            borderColor: "#2a322b",
+            borderColor: C.border,
     }}
   />
         </View>
@@ -287,7 +285,7 @@ export default function GrupoScreen() {
                 {searching ? (
                   <View style={{ alignItems: "center" }}>
                     <ActivityIndicator />
-                    <Text style={{ color: "#9aa49d", marginTop: 8 }}>Buscando…</Text>
+                    <Text style={{ color: C.muted, marginTop: 8 }}>Buscando…</Text>
                   </View>
                 ) : searchResults.length === 0 ? (
                   <Text style={{ color: "#333" }}>No hay resultados</Text>
@@ -312,7 +310,7 @@ export default function GrupoScreen() {
                         <Text style={{ color: "#111", fontWeight: "700" }}>{u.nombre || u.email || "Usuario"}</Text>
                         {u.email ? <Text style={{ color: "#444", fontSize: 13 }}>{u.email}</Text> : null}
                       </View>
-                      <Text style={{ color: "#4B5320", fontWeight: "700" }}>{adding ? "..." : "Seleccionar"}</Text>
+                      <Text style={{ color: C.primary, fontWeight: "700" }}>{adding ? "..." : "Seleccionar"}</Text>
                     </Pressable>
                   ))
                 )}
@@ -388,29 +386,29 @@ export default function GrupoScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: { alignItems: "center", paddingBottom: 30 },
   iconWrap: { marginTop: 60, marginBottom: 20 },
-  groupName: { fontSize: 22, fontWeight: "700", color: "#e8eee9", textAlign: "center" },
+  groupName: { fontSize: 22, fontWeight: "700", color: C.text, textAlign: "center" },
   infoBox: {
     width: "90%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 16,
     padding: 16,
     marginTop: 8,
   },
-  infoText: { color: "#e8eee9", fontSize: 16, marginBottom: 8 },
-  infoSubText: { color: "#9aa49d", fontSize: 14 },
+  infoText: { color: C.text, fontSize: 16, marginBottom: 8 },
+  infoSubText: { color: C.muted, fontSize: 14 },
   membersRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
   memberButton: {
-    backgroundColor: "#2a322b",
+    backgroundColor: C.border,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 12,
     marginRight: 8,
     marginBottom: 8,
   },
-  memberName: { color: "#9ec39f", fontWeight: "600", textAlign: "center" },
+  memberName: { color: C.accent, fontWeight: "600", textAlign: "center" },
   buttonsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -419,16 +417,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   funcButton: {
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     minWidth: 100,
     alignItems: "center",
   },
-  funcButtonText: { color: "#e8eee9", fontWeight: "600" },
+  funcButtonText: { color: C.text, fontWeight: "600" },
   chatDot: {
     width: 8,
     height: 8,
@@ -445,9 +443,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
   },
   modalBackdrop: {
     flex: 1,
@@ -469,10 +467,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: "#111",
   },
-  searchBtn: { backgroundColor: "#4B5320", padding: 10, borderRadius: 8, alignItems: "center", marginTop: 8 },
+  searchBtn: { backgroundColor: C.primary, padding: 10, borderRadius: 8, alignItems: "center", marginTop: 8 },
   searchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8 },
-  addBtn: { backgroundColor: "#4B5320", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
-  addMemberButton: { backgroundColor: "#2a322b", borderStyle: "dashed", borderWidth: 1, borderColor: "#2a322b" },
+  addBtn: { backgroundColor: C.primary, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
+  addMemberButton: { backgroundColor: C.border, borderStyle: "dashed", borderWidth: 1, borderColor: C.border },
   searchRowPressable: {
     flexDirection: "row",
     justifyContent: "space-between",

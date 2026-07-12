@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_URL as API } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
 import { C } from "../../theme";
 
@@ -35,7 +36,6 @@ export default function ChatConversationScreen() {
     otroUsuarioId?: string;
   }>();
 
-  const API = process.env.EXPO_PUBLIC_API_URL;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -199,7 +199,7 @@ export default function ChatConversationScreen() {
             onPress={onSend}
             disabled={!texto.trim() || sending}
           >
-            <Ionicons name="send" size={18} color="#0F1310" />
+            <Ionicons name="send" size={18} color={C.bg} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

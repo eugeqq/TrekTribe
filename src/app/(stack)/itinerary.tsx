@@ -23,8 +23,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateField from "../../components/DateField";
+import LabeledInput from "../../components/LabeledInput";
+import { API_URL as API } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
+import { safeJson } from "../../lib/safeJson";
 import { C } from "../../theme";
+import { TribeRouteParams } from "../../types/routeParams";
 
 type Grupo = {
     id: number;
@@ -53,34 +57,6 @@ function Chip({ label, color }: { label: string; color?: string }) {
     </View>
   );
 }
-
-function LabeledInput(props: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
-  keyboardType?: "default" | "numeric";
-}) {
-  return (
-    <View style={{ gap: 6 }}>
-      <Text style={styles.label}>{props.label}</Text>
-      <TextInput
-        value={props.value}
-        onChangeText={props.onChangeText}
-        placeholder={props.placeholder}
-        placeholderTextColor="#6b746e"
-        keyboardType={props.keyboardType}
-        style={styles.input}
-      />
-    </View>
-  );
-}
-
-
-async function safeJson(res: Response) {
-    const text = await res.text();
-    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
-  }
 
 // Convierte DD/MM/AAAA a ISO manteniendo hora actual
 function ddmmyyyyToIso(ddmmyyyy: string, isoWithTime: string): string {
@@ -116,9 +92,8 @@ function openInMaps(ubicacion: string) {
 export default function ItineraryScreen() {
   
   const router = useRouter();
-  const { viajeId, nombre,imagenUrl} = useLocalSearchParams<{ viajeId?: string; nombre?: string; imagenUrl?:string; }>();
+  const { viajeId, nombre, imagenUrl } = useLocalSearchParams<TribeRouteParams & { imagenUrl?: string }>();
   
-  const API = process.env.EXPO_PUBLIC_API_URL;
   const [grupo, setGrupo] = useState<Grupo | null>({ id: Number(viajeId), nombre: nombre ?? "Grupo" });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -223,17 +198,8 @@ export default function ItineraryScreen() {
   };
 
   const onSaveChanges = async () => {
-    console.log("onSaveChanges click", {
-      hasAPI: !!API,
-      viajeId,
-      hasSelected: !!selectedActivity,
-    });
-  
     if (!API || !viajeId || !selectedActivity) {
-      Alert.alert(
-        "Falta configuración",
-        `API: ${API ?? "undefined"}\nviajeId: ${String(viajeId)}\nselectedActivity: ${selectedActivity ? "ok" : "null"}`
-      );
+      Alert.alert("Error", "No se pudo guardar la actividad.");
       return;
     }
 
@@ -368,7 +334,7 @@ export default function ItineraryScreen() {
       >
 
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
 
         <View style={styles.portadaWrap}>
@@ -379,7 +345,7 @@ export default function ItineraryScreen() {
           />
           <View style={styles.avatarOverlay}>
             <View style={styles.avatarCircle}>
-              <Ionicons name="map-outline" size={30} color="#9ec39f" />
+              <Ionicons name="map-outline" size={30} color={C.accent} />
             </View>
           </View>
         </View>
@@ -416,18 +382,15 @@ renderItem={({ item }) => (
           {/* Zona que abre el detalle */}
           <TouchableOpacity
             style={{ flex: 1, paddingRight: 12 }}
-            onPress={() => {
-              console.log("openActivity", item.id);
-              openActivity(item);
-            }}
+            onPress={() => openActivity(item)}
             activeOpacity={0.7}
           >
             <Text style={styles.taskTitle}>{item.title}</Text>
           </TouchableOpacity>
-  
+
           {/* Tachito: botón independiente */}
           <TouchableOpacity
-            onPress={() => onDelete(item.id)}   // 👈 antes: onDelete(item)
+            onPress={() => onDelete(item.id)}
             hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
             activeOpacity={0.6}
             accessibilityRole="button"
@@ -439,10 +402,7 @@ renderItem={({ item }) => (
   
         {/* Contenido inferior: también abre detalle */}
         <TouchableOpacity
-          onPress={() => {
-            console.log("openActivity (row)", item.id);
-            openActivity(item);
-          }}
+          onPress={() => openActivity(item)}
           activeOpacity={0.7}
         >
           <View style={styles.row}>
@@ -512,7 +472,7 @@ renderItem={({ item }) => (
                 : "Detalle de la Actividad"}
             </Text>
             <Pressable onPress={saving ? undefined : closeModal}>
-              <Ionicons name="close" size={22} color="#e8eee9" />
+              <Ionicons name="close" size={22} color={C.text} />
             </Pressable>
           </View>
 
@@ -558,7 +518,7 @@ renderItem={({ item }) => (
                     const isoDate = ddmmyyyyToIso(formatted, selectedActivity.dateTime);
                     setSelectedActivity({ ...selectedActivity, dateTime: isoDate });
                   }}
-                  iconColor="#9ec39f"
+                  iconColor={C.accent}
                 />
               </View>
               <LabeledInput
@@ -605,9 +565,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -703,21 +663,11 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   modalTitle: { fontSize: 18, fontWeight: "800", color: C.text },
   label: { fontSize: 13, color: C.text, fontWeight: "700" },
-  input: {
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.select({ ios: 10, android: 8 }),
-    fontSize: 14,
-    backgroundColor: "#0f1511",
-    color: C.text,
-  },
   primaryBtn: {
     backgroundColor: C.accent,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
   },
-  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
+  primaryBtnText: { color: C.bg, fontWeight: "800", fontSize: 15 },
 });

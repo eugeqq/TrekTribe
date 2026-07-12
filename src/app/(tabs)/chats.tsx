@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authFetch } from "../../lib/authFetch";
+import { API_URL } from "../../constants";
 import { C } from "../../theme";
 
 // Cada cuánto se refresca sola la lista de chats mientras la pestaña está
@@ -47,7 +48,6 @@ export default function ChatsScreen() {
   const [inviting, setInviting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchChats = useCallback(
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#4B5320",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   btn: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16 },
   btnGhost: { borderWidth: 1, borderColor: C.border },
   btnGhostText: { color: C.text, fontWeight: "700" },
-  btnPrimary: { backgroundColor: "#4B5320" },
+  btnPrimary: { backgroundColor: C.primary },
   errorBox: {
     backgroundColor: "#401818",
     borderRadius: 10,

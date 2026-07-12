@@ -14,8 +14,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_URL as API } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
 import { C } from "../../theme";
+import { TribeRouteParams } from "../../types/routeParams";
 
 // Cada cuánto se refresca sola la conversación mientras está abierta.
 const POLL_INTERVAL_MS = 3000;
@@ -30,12 +32,8 @@ type Mensaje = {
 
 export default function TribeChatScreen() {
   const router = useRouter();
-  const { viajeId, nombre } = useLocalSearchParams<{
-    viajeId?: string;
-    nombre?: string;
-  }>();
+  const { viajeId, nombre } = useLocalSearchParams<TribeRouteParams>();
 
-  const API = process.env.EXPO_PUBLIC_API_URL;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -198,7 +196,7 @@ export default function TribeChatScreen() {
             onPress={onSend}
             disabled={!texto.trim() || sending}
           >
-            <Ionicons name="send" size={18} color="#0F1310" />
+            <Ionicons name="send" size={18} color={C.bg} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

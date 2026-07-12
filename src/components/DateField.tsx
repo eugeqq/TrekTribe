@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { C } from "../theme";
 
 type Props = {
   value?: string;
@@ -147,7 +148,7 @@ const calStyles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
   },
-  dayCellActive: { backgroundColor: "#4B5320" },
+  dayCellActive: { backgroundColor: C.primary },
   dayText: { color: "#111", fontSize: 14 },
   dayTextActive: { color: "#fff", fontWeight: "700" },
 });
@@ -157,8 +158,8 @@ export default function DateField({
   placeholder,
   onChange,
   style,
-  placeholderColor = "#9aa49d",
-  textColor = "#e8eee9",
+  placeholderColor = C.muted,
+  textColor = C.text,
   iconName = "calendar",
   iconColor,
   iconSize = 18,
@@ -251,12 +252,12 @@ export default function DateField({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -265,8 +266,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
   },
-  rowLabel: { color: "#9aa49d", fontSize: 12, marginBottom: 4 },
-  rowEdit: { color: "#9ec39f", fontSize: 14, fontWeight: "700" },
+  rowLabel: { color: C.muted, fontSize: 12, marginBottom: 4 },
+  rowEdit: { color: C.accent, fontSize: 14, fontWeight: "700" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -286,6 +287,6 @@ const styles = StyleSheet.create({
   modalButtons: { flexDirection: "row", marginTop: 12, alignSelf: "flex-end" },
   modalBtn: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 8 },
   modalBtnText: { color: "#333", fontWeight: "600" },
-  modalBtnPrimary: { backgroundColor: "#4B5320", paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
+  modalBtnPrimary: { backgroundColor: C.primary, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
   modalBtnPrimaryText: { color: "#fff", fontWeight: "700" },
 });

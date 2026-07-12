@@ -21,7 +21,10 @@ import {
   TouchableWithoutFeedback,
   View
 } from "react-native";
+import LabeledInput from "../../components/LabeledInput";
+import { API_URL as API } from "../../constants";
 import { authFetch } from "../../lib/authFetch";
+import { safeJson } from "../../lib/safeJson";
 import { C } from "../../theme";
 
 type Tarea = {
@@ -50,46 +53,10 @@ type Viaje = {
   miembrosCant?: number;
 };
 
-function LabeledInput(props: {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
-  multiline?: boolean;
-}) {
-  return (
-    <View style={{ gap: 6 }}>
-      <Text style={styles.label}>{props.label}</Text>
-      <TextInput
-        value={props.value}
-        onChangeText={props.onChangeText}
-        placeholder={props.placeholder}
-        placeholderTextColor="#6b746e"
-        style={[
-          styles.input,
-          props.multiline && { height: 90, textAlignVertical: "top" },
-        ]}
-        multiline={props.multiline}
-      />
-    </View>
-  );
-}
-
-async function safeJson(res: Response) {
-  const text = await res.text();
-  try {
-    return text ? JSON.parse(text) : {};
-  } catch {
-    return {};
-  }
-}
-
 export default function ToDosScreen() {
   const { groupId,imagenUrl} = useLocalSearchParams<{ groupId?: string; imagenUrl?:string; }>();
   const router = useRouter();
   
-  // Asegúrate de que esta variable de entorno esté definida en tu proyecto Expo
-  const API = process.env.EXPO_PUBLIC_API_URL; 
 
   const [viaje, setViaje] = useState<Viaje | null>(null);
   const [tareas, setTareas] = useState<Tarea[]>([]);
@@ -192,9 +159,6 @@ export default function ToDosScreen() {
 
 
   const onSave = async () => {
-    console.log("API:", API);
-    console.log("groupId:", groupId);
-    console.log("selected:", selected);
     if (!API || !groupId || !selected) return;
 
     if (!selected.titulo.trim()) {
@@ -247,44 +211,11 @@ export default function ToDosScreen() {
     }
   };
 
-  // 🗑️ Función asíncrona para manejar la lógica de eliminación y logging
-  // const handleDelete = async (t: Tarea) => {
-  //     const deleteUrl = `${API}/tareas/${t.id}`;
-      
-  //     // Log de depuración
-  //     console.log("🔥 Confirmación de eliminación. Enviando DELETE a:", deleteUrl);
-      
-  //     try {
-  //         const res = await authFetch(deleteUrl, { method: "DELETE" });
-          
-  //         if (!res.ok) {
-  //             const errorText = await res.text();
-  //             console.error("❌ Error del servidor al eliminar tarea:", res.status, errorText);
-  //             Alert.alert("Error", `No se pudo eliminar la tarea. Status: ${res.status}. ${errorText.substring(0, 50)}...`);
-  //             return;
-  //         }
-          
-  //         console.log("✅ Tarea eliminada exitosamente en el backend. Recargando lista.");
-          
-  //         await fetchTareas(); // Vuelve a cargar la lista
-          
-  //         Alert.alert("Eliminada", `La tarea "${t.titulo}" ha sido eliminada.`)
-          
-  //     } catch (e) {
-  //         console.error("❌ Error en el proceso de eliminación:", e);
-  //         Alert.alert("Error", "Ocurrió un problema de red o conexión al eliminar la tarea.");
-  //     }
-  // }
-
-
-  // 🗑️ Función onDelete (handler de Pressable) que dispara la alerta
   const onDelete = async (activityId: string | number) => {
     if (!API) return;
     try {
-      console.log('recibido es',activityId)
       const idStr = String(activityId);
       const res = await authFetch(`${API}/tareas/${idStr}`, { method: "DELETE" });
-      console.log('paso consulta')
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
         throw new Error(txt || `Error al eliminar (HTTP ${res.status})`);
@@ -322,7 +253,7 @@ export default function ToDosScreen() {
       >
 
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color="#e8eee9" />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
         {viaje && (
           <View style={styles.header}>
@@ -382,16 +313,8 @@ export default function ToDosScreen() {
                     {item.estado === "completada" ? "✅ Completada" : "🕓 Pendiente"}
                   </Text>
                 </View>
-                {/* <Pressable onPress={() => onDelete(item)}>
-                  <Ionicons name="trash-outline" size={20} color={C.delete} />
-                </Pressable> */}
-              
               <TouchableOpacity
-              
-                onPress={() => {
-                  console.log(item);
-                  onDelete(item.id)}
-                }   // 👈 antes: onDelete(item)
+                onPress={() => onDelete(item.id)}
                 hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
                 activeOpacity={0.6}
                 accessibilityRole="button"
@@ -535,12 +458,7 @@ export default function ToDosScreen() {
 
               <Pressable
                 style={[styles.primaryBtn, saving && { opacity: 0.7 }]}
-                onPress={() => {
-                  console.log(
-                    "✅ Botón 'Guardar cambios' presionado. Llamando a onSave..."
-                  );
-                  onSave();
-                }}
+                onPress={onSave}
                 disabled={saving}
               >
                 <Text style={styles.primaryBtnText}>
@@ -598,7 +516,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginVertical: 8,
   },
-  primaryBtnText: { color: "#0F1310", fontWeight: "800", fontSize: 15 },
+  primaryBtnText: { color: C.bg, fontWeight: "800", fontSize: 15 },
   muted: { color: C.muted, fontSize: 14 },
   taskCard: {
     flexDirection: "row",
@@ -631,16 +549,6 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   modalTitle: { fontSize: 18, color: C.text, fontWeight: "800" },
   label: { fontSize: 13, color: C.text, fontWeight: "700" },
-  input: {
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.select({ ios: 10, android: 8 }),
-    fontSize: 14,
-    backgroundColor: "#0f1511",
-    color: C.text,
-  },
   dropdown: {
     backgroundColor: "#0f1511",
     borderRadius: 10,

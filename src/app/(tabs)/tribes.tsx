@@ -5,6 +5,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { authFetch } from "../../lib/authFetch";
+import { API_URL } from "../../constants";
+import { C } from "../../theme";
 
 type Grupo = {
   id: number;
@@ -37,7 +39,7 @@ export default function GruposScreen() {
         return;
       }
 
-      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/viajes/usuario/${userId}`);
+      const res = await authFetch(`${API_URL}/viajes/usuario/${userId}`);
       const data = await res.json();
 
       const normalizados: Grupo[] = (Array.isArray(data) ? data : []).map((v: any) => ({
@@ -94,7 +96,7 @@ export default function GruposScreen() {
         <View style={styles.rowTop}>
           <TextInput
             placeholder="Buscar grupo..."
-            placeholderTextColor="#9aa49d"
+            placeholderTextColor={C.muted}
             value={busqueda}
             onChangeText={setBusqueda}
             style={styles.inputRow}
@@ -136,7 +138,7 @@ export default function GruposScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: 16, gap: 16, alignItems: "center" },
   rowTop: {
     flexDirection: "row",
@@ -146,17 +148,17 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flex: 1,
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#2a322b",
-    color: "#e8eee9",
+    borderColor: C.border,
+    color: C.text,
     fontSize: 16,
   },
   btnPrimaryRow: {
-    backgroundColor: "#4B5320",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingHorizontal: 16,
     justifyContent: "center",
@@ -165,12 +167,12 @@ const styles = StyleSheet.create({
   btnPrimaryText: { color: "white", fontWeight: "700", fontSize: 16 },
   grupoCard: {
     width: "100%",
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#2a322b",
+    borderColor: C.border,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -180,12 +182,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#2a322b",
+    backgroundColor: C.border,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  grupoNombre: { color: "#e8eee9", fontSize: 16, fontWeight: "700" },
-  grupoInfo: { color: "#9aa49d", fontSize: 14 },
-  noResults: { color: "#9aa49d", fontSize: 14, marginTop: 16 },
+  grupoNombre: { color: C.text, fontSize: 16, fontWeight: "700" },
+  grupoInfo: { color: C.muted, fontSize: 14 },
+  noResults: { color: C.muted, fontSize: 14, marginTop: 16 },
 });

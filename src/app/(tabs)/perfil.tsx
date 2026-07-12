@@ -6,6 +6,8 @@ import DateField from "../../components/DateField";
 import EditableRow from "../../components/EditableRow";
 import { useAuth } from "../../lib/authContext";
 import { authFetch } from "../../lib/authFetch";
+import { API_URL } from "../../constants";
+import { C } from "../../theme";
 
 type Profile = {
   nombre: string;
@@ -95,7 +97,7 @@ export default function PerfilScreen() {
     // Enviar al backend
     // OJO: no seteamos "Content-Type" a mano — fetch arma el boundary
     // correcto de multipart/form-data solo cuando el body es un FormData.
-    const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+    const res = await authFetch(`${API_URL}/user/${userId}`, {
       method: "PUT",
       body: formData,
     });
@@ -118,7 +120,7 @@ export default function PerfilScreen() {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return;
 
-      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`);
+      const res = await authFetch(`${API_URL}/user/${userId}`);
       const userData = await res.json();
 
       if (res.ok) {
@@ -163,7 +165,7 @@ export default function PerfilScreen() {
       const updatedData = { ...data, [field]: tempValue };
 
     // Actualizar backend
-      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+      const res = await authFetch(`${API_URL}/user/${userId}`, {
         method: "PUT",
         headers: {
         "Content-Type": "application/json",
@@ -194,7 +196,7 @@ export default function PerfilScreen() {
 
       const updatedData = { ...data, fechaNacimiento: formatted };
 
-      const res = await authFetch(`${process.env.EXPO_PUBLIC_API_URL}/user/${userId}`, {
+      const res = await authFetch(`${API_URL}/user/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
@@ -286,22 +288,22 @@ export default function PerfilScreen() {
 
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0F1310" },
+  safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: 16, gap: 12, alignItems: "center" },
   avatarWrap: { marginTop: 8, marginBottom: 12 },
   avatar: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#222" },
   avatarPlaceholder: { justifyContent: "center", alignItems: "center" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 },
-  modalCard: { backgroundColor: "#0F1310", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "#2a322b" },
-  modalTitle: { color: "#e8eee9", fontSize: 18, fontWeight: "700", marginBottom: 12 },
+  modalCard: { backgroundColor: C.bg, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: C.border },
+  modalTitle: { color: C.text, fontSize: 18, fontWeight: "700", marginBottom: 12 },
   input: {
-    backgroundColor: "#1a1f1b",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#2a322b",
-    color: "#e8eee9",
+    borderColor: C.border,
+    color: C.text,
     fontSize: 16,
   },
   btnLogout: {
@@ -318,8 +320,8 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   modalActions: { flexDirection: "row", gap: 12, justifyContent: "flex-end", marginTop: 16 },
   btn: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16 },
-  btnGhost: { borderWidth: 1, borderColor: "#2a322b" },
-  btnGhostText: { color: "#e8eee9", fontWeight: "700" },
-  btnPrimary: { backgroundColor: "#4B5320" },
+  btnGhost: { borderWidth: 1, borderColor: C.border },
+  btnGhostText: { color: C.text, fontWeight: "700" },
+  btnPrimary: { backgroundColor: C.primary },
   btnPrimaryText: { color: "white", fontWeight: "700" },
 });
